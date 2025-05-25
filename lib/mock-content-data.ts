@@ -1,0 +1,268 @@
+import type { ContentItem } from "@/types/content";
+
+export const mockContentItems: ContentItem[] = [
+  {
+    id: "content-1",
+    content:
+      "This platform is terrible and everyone who uses it is stupid. I can't believe how dumb you all are for supporting this garbage.",
+    contentType: "post",
+    mediaType: "text",
+    status: "reported",
+    postedAt: "2023-05-15T10:30:00Z",
+    reports: 12,
+    flaggedReason: "Hate speech",
+    aiScore: 87,
+    user: {
+      id: "user-1",
+      name: "John Smith",
+      avatar: "/placeholder.svg?height=40&width=40",
+    },
+  },
+  {
+    id: "content-2",
+    content:
+      "Check out my new NFT collection! It's going to be worth millions soon. Don't miss out on this investment opportunity!",
+    contentType: "post",
+    mediaType: "image",
+    mediaUrl: "/placeholder.svg?height=400&width=600",
+    status: "pending",
+    postedAt: "2023-05-14T15:45:00Z",
+    reports: 5,
+    flaggedReason: "Spam/Scam",
+    aiScore: 62,
+    user: {
+      id: "user-2",
+      name: "Emma Johnson",
+      avatar: "/placeholder.svg?height=40&width=40",
+    },
+  },
+  {
+    id: "content-3",
+    content:
+      "I disagree with the new policy changes. They seem to favor certain groups over others and don't address the real issues.",
+    contentType: "comment",
+    mediaType: "text",
+    status: "approved",
+    postedAt: "2023-05-13T09:15:00Z",
+    reports: 2,
+    flaggedReason: "Misinformation",
+    aiScore: 35,
+    user: {
+      id: "user-3",
+      name: "Michael Brown",
+      avatar: "/placeholder.svg?height=40&width=40",
+    },
+  },
+  {
+    id: "content-4",
+    content:
+      "Here's my tutorial on how to use the new features. Let me know if you have any questions!",
+    contentType: "post",
+    mediaType: "video",
+    mediaUrl:
+      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
+    status: "approved",
+    postedAt: "2023-05-12T14:20:00Z",
+    reports: 0,
+    flaggedReason: "",
+    aiScore: 12,
+    user: {
+      id: "user-4",
+      name: "Sarah Wilson",
+      avatar: "/placeholder.svg?height=40&width=40",
+    },
+  },
+  {
+    id: "content-5",
+    content:
+      "This is completely false information. The government is lying to us about everything. Wake up people!",
+    contentType: "comment",
+    mediaType: "text",
+    status: "reported",
+    postedAt: "2023-05-11T11:30:00Z",
+    reports: 8,
+    flaggedReason: "Misinformation",
+    aiScore: 78,
+    user: {
+      id: "user-5",
+      name: "David Lee",
+      avatar: "/placeholder.svg?height=40&width=40",
+    },
+  },
+  {
+    id: "content-6",
+    content:
+      "I'm selling access to exclusive content. DM me for details and pricing. Limited spots available!",
+    contentType: "post",
+    mediaType: "text",
+    status: "rejected",
+    postedAt: "2023-05-10T16:45:00Z",
+    reports: 7,
+    flaggedReason: "Spam/Scam",
+    aiScore: 82,
+    user: {
+      id: "user-6",
+      name: "Jessica Taylor",
+      avatar: "/placeholder.svg?height=40&width=40",
+    },
+  },
+  {
+    id: "content-7",
+    content:
+      "Just sharing some photos from our community meetup last weekend. It was great to meet everyone in person!",
+    contentType: "post",
+    mediaType: "image",
+    mediaUrl: "/placeholder.svg?height=400&width=600",
+    status: "approved",
+    postedAt: "2023-05-09T13:10:00Z",
+    reports: 0,
+    flaggedReason: "",
+    aiScore: 5,
+    user: {
+      id: "user-7",
+      name: "Robert Garcia",
+      avatar: "/placeholder.svg?height=40&width=40",
+    },
+  },
+  {
+    id: "content-8",
+    content:
+      "Your product is terrible and your customer service is even worse. I'm going to make sure everyone knows how awful you are.",
+    contentType: "comment",
+    mediaType: "text",
+    status: "reported",
+    postedAt: "2023-05-08T10:20:00Z",
+    reports: 3,
+    flaggedReason: "Harassment",
+    aiScore: 65,
+    user: {
+      id: "user-8",
+      name: "Amanda Martinez",
+      avatar: "/placeholder.svg?height=40&width=40",
+    },
+  },
+  {
+    id: "content-9",
+    content:
+      "Here's my latest project. I've been working on it for months and I'm excited to share it with the community!",
+    contentType: "post",
+    mediaType: "video",
+    mediaUrl:
+      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
+    status: "approved",
+    postedAt: "2023-05-07T15:30:00Z",
+    reports: 0,
+    flaggedReason: "",
+    aiScore: 8,
+    user: {
+      id: "user-9",
+      name: "Thomas Anderson",
+      avatar: "/placeholder.svg?height=40&width=40",
+    },
+  },
+  {
+    id: "content-10",
+    content:
+      "I can't believe people still fall for these scams. You're all so gullible and deserve to lose your money.",
+    contentType: "comment",
+    mediaType: "text",
+    status: "reported",
+    postedAt: "2023-05-06T09:45:00Z",
+    reports: 6,
+    flaggedReason: "Harassment",
+    aiScore: 72,
+    user: {
+      id: "user-10",
+      name: "Olivia White",
+      avatar: "/placeholder.svg?height=40&width=40",
+    },
+  },
+  {
+    id: "content-11",
+    content:
+      "Check out this amazing deal I found! Use my referral code to get 50% off your first purchase.",
+    contentType: "post",
+    mediaType: "image",
+    mediaUrl: "/placeholder.svg?height=400&width=600",
+    status: "pending",
+    postedAt: "2023-05-05T14:15:00Z",
+    reports: 4,
+    flaggedReason: "Spam/Scam",
+    aiScore: 58,
+    user: {
+      id: "user-11",
+      name: "Daniel Clark",
+      avatar: "/placeholder.svg?height=40&width=40",
+    },
+  },
+  {
+    id: "content-12",
+    content:
+      "This update is the worst thing ever. The developers clearly don't care about the users anymore.",
+    contentType: "comment",
+    mediaType: "text",
+    status: "approved",
+    postedAt: "2023-05-04T11:30:00Z",
+    reports: 1,
+    flaggedReason: "Negative sentiment",
+    aiScore: 45,
+    user: {
+      id: "user-12",
+      name: "Sophia Rodriguez",
+      avatar: "/placeholder.svg?height=40&width=40",
+    },
+  },
+  {
+    id: "content-13",
+    content:
+      "I've discovered a secret method to make $1000 a day working from home. Click the link in my bio to learn more!",
+    contentType: "post",
+    mediaType: "text",
+    status: "rejected",
+    postedAt: "2023-05-03T16:20:00Z",
+    reports: 15,
+    flaggedReason: "Spam/Scam",
+    aiScore: 95,
+    user: {
+      id: "user-13",
+      name: "James Wilson",
+      avatar: "/placeholder.svg?height=40&width=40",
+    },
+  },
+  {
+    id: "content-14",
+    content:
+      "Thank you for the helpful tutorial! I was able to solve my problem following your instructions.",
+    contentType: "comment",
+    mediaType: "text",
+    status: "approved",
+    postedAt: "2023-05-02T13:45:00Z",
+    reports: 0,
+    flaggedReason: "",
+    aiScore: 3,
+    user: {
+      id: "user-14",
+      name: "Emily Davis",
+      avatar: "/placeholder.svg?height=40&width=40",
+    },
+  },
+  {
+    id: "content-15",
+    content:
+      "This is a demonstration of our new product features. We've made significant improvements based on your feedback!",
+    contentType: "post",
+    mediaType: "video",
+    mediaUrl:
+      "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
+    status: "approved",
+    postedAt: "2023-05-01T10:10:00Z",
+    reports: 0,
+    flaggedReason: "",
+    aiScore: 7,
+    user: {
+      id: "user-15",
+      name: "William Johnson",
+      avatar: "/placeholder.svg?height=40&width=40",
+    },
+  },
+];
