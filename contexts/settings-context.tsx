@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useEffect, useState } from "react"
+import { useSession } from "next-auth/react";
 
 export interface UserSettings {
   avatar: string
@@ -74,6 +75,9 @@ interface SettingsContextType {
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined)
 
 export function SettingsProvider({ children }: { children: React.ReactNode }) {
+
+  const { data: session } = useSession();
+
   const [settings, setSettings] = useState<UserSettings>(() => {
     // Try to load settings from localStorage during initialization
     if (typeof window !== "undefined") {
@@ -82,8 +86,28 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
         return JSON.parse(savedSettings)
       }
     }
-    return defaultSettings
+    // Use session data if available, otherwise use default settings
+    return {
+      ...defaultSettings,
+      fullName: session?.user?.firstName && session?.user?.lastName 
+        ? `${session.user.firstName} ${session.user.lastName}`
+        : defaultSettings.fullName,
+      email: session?.user?.email || defaultSettings.email,
+      avatar: session?.user?.image || defaultSettings.avatar,
+    }
   })
+
+  // Update settings when session changes
+  useEffect(() => {
+    if (session?.user) {
+      setSettings(prev => ({
+        ...prev,
+        fullName: `${session.user.firstName} ${session.user.lastName}`,
+        email: session.user.email,
+        avatar: session.user.image || prev.avatar,
+      }))
+    }
+  }, [session])
 
   // Save settings to localStorage whenever they change
   useEffect(() => {

@@ -5,9 +5,10 @@ import { poppins } from "@/components/ui/fonts";
 import { useForm } from "react-hook-form";
 import Link from "next/link";
 
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import Image from "next/image";
 import GoogleLoginButton from "@/components/googleLoginButton";
+import { useRouter } from "next/navigation";
 
 type formFields = {
   email: string;
@@ -15,6 +16,8 @@ type formFields = {
 };
 
 const SigninPage = () => {
+  const router = useRouter();
+  const { data: session } = useSession();
   const { register, handleSubmit, formState, watch } = useForm<formFields>({
     defaultValues: {
       email: "",
@@ -27,20 +30,16 @@ const SigninPage = () => {
     try {
       if (data.email && data.password) {
         const result = await signIn("credentials", {
-          redirect: false,
-          callbackUrl: "/job-list",
           email: data.email,
           password: data.password,
+          redirect: false,
+          callbackUrl: "/",
         });
-
+        
         if (result?.error) {
           console.log(result.error);
-        } else {
-          localStorage.setItem("tok", JSON.stringify(result));
-          setTimeout(() => {}, 5000);
-        }
-        if (result?.url) {
-          window.location.href = result.url;
+        } else if (result?.ok) {
+          router.push("/");
         }
       } else {
         throw new Error("Email and password are required");

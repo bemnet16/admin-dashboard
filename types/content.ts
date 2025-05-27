@@ -1,19 +1,29 @@
 export interface ContentItem {
   id: string;
-  content: string;
-  contentType: string;
-  mediaType: string;
-  mediaUrl?: string;
-  status: string;
-  postedAt: string;
-  reports: number;
-  flaggedReason: string;
-  aiScore: number;
-  user: {
+  profile: {
     id: string;
+    online: boolean;
+    picture: string;
     name: string;
-    avatar: string;
   };
+  videoURL: string;
+  description: string;
+  isPremiumContent: boolean;
+  duration: number;
+  hashtags: string[];
+  mentionedUsers: any[];
+  allowComments: boolean;
+  allowSaveToDevice: boolean;
+  saveWithWatermark: boolean;
+  audienceControlUnder18: boolean;
+  likes: number;
+  comments: number;
+  favoriteCount: number;
+  shareCount: number;
+  createdAt: string;
+  updatedAt: string;
+  privacy: string;
+  isLikedByUser: boolean;
 }
 
 export interface ContentAction {

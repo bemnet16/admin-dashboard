@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import { poppins } from "@/components/ui/fonts";
 import Link from "next/link";
 import { redirect } from "next/navigation";
@@ -12,11 +12,13 @@ import { useDispatch } from "react-redux";
 import GoogleLoginButton from "@/components/googleLoginButton";
 
 type formFields = {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   password: string;
   confirmPassword: string;
   role: string;
+  gender: string;
 };
 
 interface ErrorResponse {
@@ -31,23 +33,32 @@ const SignupPage = () => {
   const dispatch = useDispatch();
   const { register, handleSubmit, formState, watch } = useForm<formFields>({
     defaultValues: {
-      name: "",
+      firstName: "",
+      lastName: "",
       email: "",
       password: "",
       confirmPassword: "",
-      role: "",
+      role: "user",
+      gender: "",
     },
   });
   const { errors, isSubmitting, isSubmitSuccessful } = formState;
 
-  const onSubmit = async (data: formFields) => {
-    dispatch(updateUser(data));
-    await registerUser(data);
-  };
+  useEffect(() => {
+    if (userInfo && isSuccess) {
+      redirect("/otp-verify");
+    }
+  }, [userInfo, isSuccess]);
 
-  if (userInfo && isSuccess) {
-    redirect("/otp-verify");
-  }
+  const onSubmit = async (data: formFields) => {
+    const { confirmPassword, ...submitData } = data;
+    dispatch(updateUser(submitData));
+    try {
+      await registerUser(submitData);
+    } catch (err) {
+      console.error("Registration error:", err);
+    }
+  };
 
   return (
     <div className="flex items-center justify-center h-screen ">
@@ -69,21 +80,38 @@ const SignupPage = () => {
           <hr className="w-1/4  bg-black" />
         </div>
 
-        <label className="w-full font-[600] text-[#515B6F] mb-1" htmlFor="name">
-          Full Name
+        <label className="w-full font-[600] text-[#515B6F] mb-1" htmlFor="firstName">
+          First Name
         </label>
         <input
           className="w-full rounded-md border-[1px] border-[#D6DDEB] text-gray-700 p-2 mb-4"
           type="text"
-          id="name"
-          {...register("name", { required: "Name is required!" })}
-          placeholder="Enter full name"
+          id="firstName"
+          {...register("firstName", { required: "First name is required!" })}
+          placeholder="Enter first name"
         />
-        {errors?.name && (
+        {errors?.firstName && (
           <p className="w-full text-xs text-red-500 text-end mt-[-14px]">
-            {errors.name.message}{" "}
+            {errors.firstName.message}
           </p>
         )}
+
+        <label className="w-full font-[600] text-[#515B6F] mb-1" htmlFor="lastName">
+          Last Name
+        </label>
+        <input
+          className="w-full rounded-md border-[1px] border-[#D6DDEB] text-gray-700 p-2 mb-4"
+          type="text"
+          id="lastName"
+          {...register("lastName", { required: "Last name is required!" })}
+          placeholder="Enter last name"
+        />
+        {errors?.lastName && (
+          <p className="w-full text-xs text-red-500 text-end mt-[-14px]">
+            {errors.lastName.message}
+          </p>
+        )}
+
         <label
           className="w-full font-[600] text-[#515B6F] mb-1"
           htmlFor="email"
@@ -152,6 +180,27 @@ const SignupPage = () => {
         {errors?.confirmPassword && (
           <p className="w-full text-xs text-red-500 text-end mt-[-14px]">
             {errors.confirmPassword.message}{" "}
+          </p>
+        )}
+
+        <label
+          className="w-full font-[600] text-[#515B6F] mb-1"
+          htmlFor="gender"
+        >
+          Gender
+        </label>
+        <select
+          className="w-full rounded-md border-[1px] border-[#D6DDEB] text-gray-700 p-2 mb-4"
+          id="gender"
+          {...register("gender", { required: "Gender is required!" })}
+        >
+          <option value="">Select gender</option>
+          <option value="male">Male</option>
+          <option value="female">Female</option>
+        </select>
+        {errors?.gender && (
+          <p className="w-full text-xs text-red-500 text-end mt-[-14px]">
+            {errors.gender.message}
           </p>
         )}
 

@@ -2,6 +2,7 @@ import { configureStore } from "@reduxjs/toolkit";
 
 import { opportunityApi } from "./services/opportunityApi";
 import { authApi } from "./services/authApi";
+import { userApi } from "./services/userApi";
 import userReducer from "./features/userSlice";
 import bookmarkReducer from "./features/bookmarkSlice";
 import opportunityReducer from "./features/opportunitySlice";
@@ -13,10 +14,12 @@ export const store = configureStore({
     opportunities: opportunityReducer,
     [opportunityApi.reducerPath]: opportunityApi.reducer,
     [authApi.reducerPath]: authApi.reducer,
+    [userApi.reducerPath]: userApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware().concat(
       opportunityApi.middleware,
-      authApi.middleware
+      authApi.middleware,
+      userApi.middleware,
     ),
 });

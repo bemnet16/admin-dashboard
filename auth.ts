@@ -17,21 +17,30 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
       authorize: async (credentials) => {
         try {
-          const res = await fetch("https://akil-backend.onrender.com/login", {
+          const res = await fetch("http://localhost:3005/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(credentials),
           });
           const user = await res.json();
+         
           if (res.ok && user) {
-            const { email, id, name, role, accessToken } = user.data;
-            return {
-              email: email,
-              id: id,
-              name: name,
-              role: role,
-              accessToken,
-            };
+            try {
+              const userRes = await fetch(`http://localhost:3005/auth/profile`, {
+                headers: {
+                  Authorization: `Bearer ${user.accessToken}`,
+                },
+              });
+              if (userRes.ok) {
+                const userData = await userRes.json();
+                return {
+                  ...userData,
+                  accessToken: user.accessToken
+                };
+              }
+            } catch (error) {
+              console.error('Error fetching user data:', error);
+            }
           } else {
             return null;
           }
@@ -46,6 +55,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (user) {
         token.role = user.role;
         token.accessToken = user.accessToken;
+        token.id = user.id;
+        token.firstName = user.firstName;
+        token.lastName = user.lastName;
+        token.email = user.email;
+        token.bio = user.bio;
       }
       return token;
     },
@@ -53,6 +67,11 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       if (token) {
         session.user.role = token.role;
         session.user.accessToken = token.accessToken;
+        session.user.id = token.id;
+        session.user.firstName = token.firstName;
+        session.user.lastName = token.lastName;
+        session.user.email = token.email;
+        session.user.bio = token.bio;
       }
       return session;
     },
@@ -60,5 +79,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   pages: {
     signIn: "/signin",
     error: "/signin",
+  },
+  session: {
+    strategy: "jwt",
   },
 });

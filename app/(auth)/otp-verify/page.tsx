@@ -4,10 +4,8 @@ import { userInfoStateType } from "@/lib/types";
 import React, { useEffect, useState } from "react";
 import { useForm, Controller } from "react-hook-form";
 import { useSelector } from "react-redux";
-import { useVerifyEmailMutation } from "@/store/services/authApi";
-import { usePostSignupMutation } from "@/store/services/authApi";
+import { useVerifyEmailMutation, useResendOtpMutation } from "@/store/services/authApi";
 import { useRouter } from "next/navigation";
-
 import { signIn } from "next-auth/react";
 
 interface ErrorResponse {
@@ -33,9 +31,9 @@ const OtpPage = () => {
   ] = useVerifyEmailMutation();
 
   const [
-    registerUser,
+    resendOtp,
     { isError: isResendingError, isLoading: isResending, error: resendError },
-  ] = usePostSignupMutation();
+  ] = useResendOtpMutation();
 
   const {
     control,
@@ -46,7 +44,7 @@ const OtpPage = () => {
     formState: { isLoading: isVerifying, isSubmitting },
   } = useForm<OtpFormFields>({
     defaultValues: {
-      otp: ["", "", "", ""],
+      otp: ["", "", "", "", "", ""],
     },
   });
 
@@ -76,27 +74,27 @@ const OtpPage = () => {
     try {
       const result = await verifyEmail({
         email: userInfo.email,
-        OTP: otpValue,
+        verificationCode: otpValue,
       });
 
       if (result.error) {
         setShowError(true);
-        console.error("OTP verification failed:", result.error);
+        console.log("OTP verification failed:", result.error);
         return;
       }
 
-      if (result && result.data && isSuccess) {
+      if (result.data) {
         const signInResult = await signIn("credentials", {
           email: userInfo.email,
           password: userInfo.password,
           redirect: false,
-          callbackUrl: "/job-list",
+          callbackUrl: "/",
         });
-
+        console.log(signInResult, "signInResult");
         if (signInResult?.url) {
           router.push(signInResult.url);
         } else {
-          console.error("Sign-in failed, no redirect URL found.");
+          console.log("Sign-in failed, no redirect URL found.");
         }
       }
     } catch (err) {
@@ -110,7 +108,7 @@ const OtpPage = () => {
     otpValues[index] = value;
     setValue("otp", otpValues);
 
-    if (value && index < 3) {
+    if (value && index < 5) {
       const nextField = document.getElementById(`otp-${index + 1}`);
       if (nextField) nextField.focus();
     }
@@ -131,7 +129,7 @@ const OtpPage = () => {
       setShowError((preVal) => false);
       setResendTimer(30);
       setResendEnabled(false);
-      await registerUser(userInfo);
+      await resendOtp({ email: userInfo.email });
     }
   };
 
@@ -144,10 +142,6 @@ const OtpPage = () => {
   //   setShowError((preVal) => true);
   // }
 
-  if (isResendingError) {
-    console.log(userInfo);
-    console.log("Error:", resendError);
-  }
   return (
     <div className="h-screen flex items-center justify-center">
       <form
@@ -162,7 +156,7 @@ const OtpPage = () => {
           complete the verification process, please enter the code here.
         </p>
         <div className="flex justify-around w-full mb-8 mt-14">
-          {Array.from({ length: 4 }, (_, index) => (
+          {Array.from({ length: 6 }, (_, index) => (
             <Controller
               key={index}
               control={control}
@@ -174,7 +168,7 @@ const OtpPage = () => {
                   type="text"
                   placeholder="0"
                   maxLength={1}
-                  className="w-16 h-10 text-center text-gray-600 text-2xl border-2 border-[#4640DE]/35 bg-gray-50 rounded-md focus:outline-none"
+                  className="w-12 h-10 text-center text-gray-600 text-2xl border-2 border-[#4640DE]/35 bg-gray-50 rounded-md focus:outline-none"
                   onChange={(e) => handleInputChange(e.target.value, index)}
                   onKeyDown={(e) => handleBackspace(e, index)}
                 />

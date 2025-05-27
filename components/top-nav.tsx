@@ -15,11 +15,16 @@ import {
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import React from "react";
+import { signOut } from "next-auth/react";
 
 export function TopNav() {
   const pathname = usePathname();
   const pathSegments = pathname.split("/").filter(Boolean);
   const { settings } = useSettings();
+
+  const handleLogout = async () => {
+    await signOut({ callbackUrl: "/signin" });
+  };
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background">
@@ -77,7 +82,7 @@ export function TopNav() {
               <DropdownMenuItem asChild>
                 <Link href="/settings">Settings</Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>Log out</DropdownMenuItem>
+              <DropdownMenuItem onClick={handleLogout}>Log out</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
