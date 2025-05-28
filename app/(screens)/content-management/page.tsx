@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -14,28 +15,36 @@ import {
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ContentList } from "@/components/content-management/list";
 import { ContentDrawer } from "@/components/content-management/drawer";
-import { mockContentItems } from "@/lib/content-data";
 import type { ContentItem, ViewMode } from "@/types/content";
 import { Filter, Search, X } from "lucide-react";
+import { useGetContentsQuery } from "@/store/services/contentApi";
 
 export default function ContentManagementPage() {
+  const { data: session } = useSession();
   const [searchQuery, setSearchQuery] = useState("");
   const [contentTypeFilter, setContentTypeFilter] = useState("all");
   const [mediaTypeFilter, setMediaTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [viewMode, setViewMode] = useState<ViewMode>("table");
-  const [selectedContent, setSelectedContent] = useState<ContentItem | null>(
-    null
-  );
+  const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage] = useState(100);
+
+  // Fetch content data using RTK Query
+  const { data: contentResponse, isLoading, error } = useGetContentsQuery({
+    page: currentPage,
+    limit: itemsPerPage,
+    token: session?.user.accessToken
+  });
 
   // Filter content based on selected filters and search query
-  const filteredContent = mockContentItems.filter((item) => {
+  const filteredContent = contentResponse?.filter((item) => {
     const matchesSearch =
       searchQuery === "" ||
-      item.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      item.user.name.toLowerCase().includes(searchQuery.toLowerCase());
+      item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.profile.name.toLowerCase().includes(searchQuery.toLowerCase());
 
     const matchesContentType =
       contentTypeFilter === "all" || item.contentType === contentTypeFilter;
@@ -49,7 +58,7 @@ export default function ContentManagementPage() {
     return (
       matchesSearch && matchesContentType && matchesMediaType && matchesStatus
     );
-  });
+  }) || [];
 
   const handleViewContent = (content: ContentItem) => {
     setSelectedContent(content);
@@ -75,6 +84,22 @@ export default function ContentManagementPage() {
     setMediaTypeFilter("all");
     setStatusFilter("all");
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-red-500">Error loading content. Please try again later.</div>
+      </div>
+    );
+  }
 
   return (
     <div className="py-6 space-y-6">

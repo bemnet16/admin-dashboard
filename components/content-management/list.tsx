@@ -33,13 +33,13 @@ export function ContentList({
     <div className="space-y-4">
       {viewMode === "table" ? (
         <TableView
-          items={paginatedItems}
+        contentItems={paginatedItems}
           onViewContent={onViewContent}
           onContentAction={onContentAction}
         />
       ) : (
         <CardView
-          items={paginatedItems}
+        contentItems={paginatedItems}
           onViewContent={onViewContent}
           onContentAction={onContentAction}
         />

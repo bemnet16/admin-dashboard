@@ -1,3 +1,5 @@
+export type ViewMode = "table" | "cards";
+
 export interface ContentItem {
   id: string;
   profile: {
@@ -11,7 +13,7 @@ export interface ContentItem {
   isPremiumContent: boolean;
   duration: number;
   hashtags: string[];
-  mentionedUsers: any[];
+  mentionedUsers: string[];
   allowComments: boolean;
   allowSaveToDevice: boolean;
   saveWithWatermark: boolean;
@@ -24,6 +26,12 @@ export interface ContentItem {
   updatedAt: string;
   privacy: string;
   isLikedByUser: boolean;
+  contentType?: string | null;
+  mediaType?: string | null;
+  status?: string | null;
+  reports?: number | null;
+  flaggedReason?: string | null;
+  aiScore?: number | null;
 }
 
 export interface ContentAction {
@@ -32,5 +40,3 @@ export interface ContentAction {
   icon: string;
   variant?: string;
 }
-
-export type ViewMode = "table" | "cards";
