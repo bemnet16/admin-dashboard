@@ -16,6 +16,7 @@ interface ContentPaginationProps {
   totalItems: number;
   itemsPerPage: number;
   onPageChange: (page: number) => void;
+  hasNextPage: boolean;
 }
 
 export function ContentPagination({
@@ -24,6 +25,7 @@ export function ContentPagination({
   totalItems,
   itemsPerPage,
   onPageChange,
+  hasNextPage,
 }: ContentPaginationProps) {
   return (
     <div className="flex justify-between items-center">
@@ -85,11 +87,9 @@ export function ContentPagination({
 
             <PaginationItem>
               <PaginationNext
-                onClick={() =>
-                  onPageChange(Math.min(currentPage + 1, totalPages))
-                }
+                onClick={() => onPageChange(currentPage + 1)}
                 className={
-                  currentPage === totalPages
+                  !hasNextPage
                     ? "pointer-events-none opacity-50"
                     : "cursor-pointer"
                 }

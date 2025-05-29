@@ -32,11 +32,12 @@ export const contentApi = createApi({
   }),
   tagTypes: ["Content"],
   endpoints: (builder) => ({
-    getContents: builder.query<ContentResponse, { page: number; limit: number; token?: string }>({
+    getContents: builder.query<ContentItem[], { page: number; limit: number; token?: string }>({
       query: ({ page, limit, token }) => ({
         url: `/reel/many?page=${page}&limit=${limit}`,
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       }),
+      transformResponse: (response: ContentItem[]) => response,
       providesTags: ["Content"],
     }),
     getContentById: builder.query<ContentItem, { id: string; token?: string }>({
@@ -44,7 +45,7 @@ export const contentApi = createApi({
         url: `/reel/${id}`,
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       }),
-      providesTags: (result, error, id) => [{ type: "Content", id }],
+      providesTags: (result, error, id) => [{ type: "Content", id: id.id }],
     }),
     getContentReports: builder.query<ReportsResponse, { contentId: string; token?: string }>({
       query: ({ contentId, token }) => ({

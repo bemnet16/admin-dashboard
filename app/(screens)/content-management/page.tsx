@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,14 +13,27 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ContentList } from "@/components/content-management/list";
+import { TableView } from "@/components/content-management/table-view";
+import { CardView as ContentCardView } from "@/components/content-management/card-view";
 import { ContentDrawer } from "@/components/content-management/drawer";
 import type { ContentItem, ViewMode } from "@/types/content";
 import { Filter, Search, X } from "lucide-react";
 import { useGetContentsQuery } from "@/store/services/contentApi";
+import { PostsTable } from "@/components/posts-management/table";
+import { PostsDrawer } from "@/components/posts-management/drawer";
+import { PostsPagination } from "@/components/posts-management/pagination";
+import { ContentPagination } from "@/components/content-management/pagination";
+import { CardView } from "@/components/posts-management/card-view";
+import type { Post } from "@/types/post";
+import { useGetPostsQuery, useApprovePostMutation, useRejectPostMutation } from "@/store/services/postsApi";
+import { useToast } from "@/components/ui/use-toast";
+import { Grid, List } from "lucide-react";
+
+const ITEMS_PER_PAGE = 9;
 
 export default function ContentManagementPage() {
   const { data: session } = useSession();
+  const [activeTab, setActiveTab] = useState<"reels" | "posts">("reels");
   const [searchQuery, setSearchQuery] = useState("");
   const [contentTypeFilter, setContentTypeFilter] = useState("all");
   const [mediaTypeFilter, setMediaTypeFilter] = useState("all");
@@ -29,15 +42,49 @@ export default function ContentManagementPage() {
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage] = useState(100);
+  const [reelsPage, setReelsPage] = useState(1);
+  const [postsPage, setPostsPage] = useState(1);
+  const [itemsPerPage] = useState(10);
+  const [totalItemsSeen, setTotalItemsSeen] = useState(0);
+  const [lastPage, setLastPage] = useState(1);
+
+  // Posts state
+  const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const { toast } = useToast();
 
   // Fetch content data using RTK Query
-  const { data: contentResponse, isLoading, error } = useGetContentsQuery({
-    page: currentPage,
+  const { data: contentResponse, isLoading: isLoadingContent, error: contentError } = useGetContentsQuery({
+    page: reelsPage,
     limit: itemsPerPage,
     token: session?.user.accessToken
   });
+
+  // Update total items seen when new data arrives
+  useEffect(() => {
+    if (contentResponse) {
+      if (reelsPage === 1) {
+        // Reset total when we're on page 1
+        setTotalItemsSeen(contentResponse.length);
+        setLastPage(1);
+      } else if (reelsPage > lastPage) {
+        // Only add to total when we're going forward
+        setTotalItemsSeen(prev => prev + contentResponse.length);
+        setLastPage(reelsPage);
+      }
+    }
+  }, [contentResponse, reelsPage, lastPage]);
+
+  // Fetch posts data
+  const { data: postsData, isLoading: isLoadingPosts, refetch: refetchPosts } = useGetPostsQuery(
+    { 
+      token: session?.user.accessToken,
+      page: postsPage,
+      limit: ITEMS_PER_PAGE,
+    },
+    { skip: !session?.user.accessToken }
+  );
+  const [approvePost] = useApprovePostMutation();
+  const [rejectPost] = useRejectPostMutation();
 
   // Filter content based on selected filters and search query
   const filteredContent = contentResponse?.filter((item) => {
@@ -60,6 +107,20 @@ export default function ContentManagementPage() {
     );
   }) || [];
 
+  // Filter posts
+  const filteredPosts = postsData?.data?.filter((post) => {
+    const matchesSearch =
+      searchQuery === "" ||
+      (post.content?.toLowerCase() || "").includes(searchQuery.toLowerCase()) ||
+      post.owner.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      post.owner.lastName.toLowerCase().includes(searchQuery.toLowerCase());
+
+    const matchesStatus =
+      statusFilter === "all" || post.status === statusFilter;
+
+    return matchesSearch && matchesStatus;
+  }) || [];
+
   const handleViewContent = (content: ContentItem) => {
     setSelectedContent(content);
     setIsDrawerOpen(true);
@@ -71,10 +132,40 @@ export default function ContentManagementPage() {
 
   const handleContentAction = (contentId: string, action: string) => {
     console.log(`Action ${action} on content ${contentId}`);
-    // In a real app, you would update the content status here
-    // and potentially close the drawer if the action was taken from there
     if (isDrawerOpen) {
       setIsDrawerOpen(false);
+    }
+  };
+
+  const handleViewPost = (post: Post) => {
+    setSelectedPost(post);
+  };
+
+  const handlePostAction = async (postId: string, action: string) => {
+    if (!session?.user.accessToken) return;
+
+    try {
+      if (action === "approve") {
+        await approvePost({ postId, token: session.user.accessToken }).unwrap();
+        toast({
+          title: "Post approved",
+          description: "The post has been approved successfully.",
+        });
+      } else if (action === "reject") {
+        await rejectPost({ postId, token: session.user.accessToken }).unwrap();
+        toast({
+          title: "Post rejected",
+          description: "The post has been rejected successfully.",
+        });
+      }
+      setSelectedPost(null);
+      refetchPosts();
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An error occurred while processing the post.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -85,7 +176,7 @@ export default function ContentManagementPage() {
     setStatusFilter("all");
   };
 
-  if (isLoading) {
+  if (isLoadingContent || isLoadingPosts) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
@@ -93,7 +184,7 @@ export default function ContentManagementPage() {
     );
   }
 
-  if (error) {
+  if (contentError) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-red-500">Error loading content. Please try again later.</div>
@@ -105,7 +196,7 @@ export default function ContentManagementPage() {
     <div className="py-6 space-y-6">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Manage Contents</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Content Management</h1>
         </div>
         <div className="flex items-center gap-2">
           <Button
@@ -131,6 +222,13 @@ export default function ContentManagementPage() {
         </div>
       </div>
 
+      <Tabs value={activeTab} onValueChange={(value) => setActiveTab(value as "reels" | "posts")}>
+        <TabsList>
+          <TabsTrigger value="reels">Reels</TabsTrigger>
+          <TabsTrigger value="posts">Posts</TabsTrigger>
+        </TabsList>
+      </Tabs>
+
       {/* Filter Section */}
       <Card className={`${showFilters ? "block" : "hidden sm:block"}`}>
         <CardContent className="p-4 sm:p-6">
@@ -146,34 +244,38 @@ export default function ContentManagementPage() {
               />
             </div>
             <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-              <Select
-                value={contentTypeFilter}
-                onValueChange={setContentTypeFilter}
-              >
-                <SelectTrigger className="w-full sm:w-[140px]">
-                  <SelectValue placeholder="Content Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Types</SelectItem>
-                  <SelectItem value="post">Posts</SelectItem>
-                  <SelectItem value="comment">Comments</SelectItem>
-                </SelectContent>
-              </Select>
+              {activeTab === "reels" && (
+                <>
+                  <Select
+                    value={contentTypeFilter}
+                    onValueChange={setContentTypeFilter}
+                  >
+                    <SelectTrigger className="w-full sm:w-[140px]">
+                      <SelectValue placeholder="Content Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Types</SelectItem>
+                      <SelectItem value="post">Posts</SelectItem>
+                      <SelectItem value="comment">Comments</SelectItem>
+                    </SelectContent>
+                  </Select>
 
-              <Select
-                value={mediaTypeFilter}
-                onValueChange={setMediaTypeFilter}
-              >
-                <SelectTrigger className="w-full sm:w-[140px]">
-                  <SelectValue placeholder="Media Type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Media</SelectItem>
-                  <SelectItem value="text">Text</SelectItem>
-                  <SelectItem value="image">Image</SelectItem>
-                  <SelectItem value="video">Video</SelectItem>
-                </SelectContent>
-              </Select>
+                  <Select
+                    value={mediaTypeFilter}
+                    onValueChange={setMediaTypeFilter}
+                  >
+                    <SelectTrigger className="w-full sm:w-[140px]">
+                      <SelectValue placeholder="Media Type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Media</SelectItem>
+                      <SelectItem value="text">Text</SelectItem>
+                      <SelectItem value="image">Image</SelectItem>
+                      <SelectItem value="video">Video</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </>
+              )}
 
               <Select value={statusFilter} onValueChange={setStatusFilter}>
                 <SelectTrigger className="w-full sm:w-[140px]">
@@ -204,20 +306,80 @@ export default function ContentManagementPage() {
       </Card>
 
       {/* Content List */}
-      <ContentList
-        contentItems={filteredContent}
-        viewMode={viewMode}
-        onViewContent={handleViewContent}
-        onContentAction={handleContentAction}
-      />
+      {activeTab === "reels" ? (
+        <>
+          <div className="space-y-4">
+            {viewMode === "table" ? (
+              <TableView
+                contentItems={filteredContent}
+                onViewContent={handleViewContent}
+                onContentAction={handleContentAction}
+              />
+            ) : (
+              <ContentCardView
+                contentItems={filteredContent}
+                onViewContent={handleViewContent}
+                onContentAction={handleContentAction}
+              />
+            )}
+          </div>
+          {contentResponse && (
+            <ContentPagination
+              currentPage={reelsPage}
+              totalPages={Math.ceil(totalItemsSeen / itemsPerPage)}
+              totalItems={totalItemsSeen}
+              itemsPerPage={itemsPerPage}
+              onPageChange={(page) => {
+                setReelsPage(page);
+                // The API call will automatically happen because reelsPage is a dependency
+              }}
+              hasNextPage={contentResponse.length === itemsPerPage}
+            />
+          )}
+        </>
+      ) : (
+        <>
+          {viewMode === "cards" ? (
+            <CardView
+              posts={filteredPosts}
+              onViewPost={handleViewPost}
+              onPostAction={handlePostAction}
+            />
+          ) : (
+            <PostsTable
+              posts={filteredPosts}
+              onViewPost={handleViewPost}
+              onPostAction={handlePostAction}
+            />
+          )}
+          {postsData && (
+            <PostsPagination
+              currentPage={postsPage}
+              totalPages={Math.ceil((postsData.total || 0) / ITEMS_PER_PAGE)}
+              totalItems={postsData.total}
+              itemsPerPage={ITEMS_PER_PAGE}
+              onPageChange={setPostsPage}
+            />
+          )}
+        </>
+      )}
 
       {/* Content Drawer */}
-      <ContentDrawer
-        content={selectedContent}
-        isOpen={isDrawerOpen}
-        onClose={handleCloseDrawer}
-        onContentAction={handleContentAction}
-      />
+      {activeTab === "reels" ? (
+        <ContentDrawer
+          content={selectedContent}
+          isOpen={isDrawerOpen}
+          onClose={handleCloseDrawer}
+          onContentAction={handleContentAction}
+        />
+      ) : (
+        <PostsDrawer
+          post={selectedPost}
+          isOpen={!!selectedPost}
+          onClose={() => setSelectedPost(null)}
+          onPostAction={handlePostAction}
+        />
+      )}
     </div>
   );
 }

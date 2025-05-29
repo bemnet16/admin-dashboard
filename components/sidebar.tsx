@@ -20,6 +20,7 @@ import {
   Menu,
   ChevronLeft,
   Podcast,
+  MessageSquare,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -35,6 +36,7 @@ const navigation = [
   { name: "Analytics", href: "/analytics", icon: BarChart2 },
   { name: "Users", href: "/users", icon: Users2 },
   { name: "Contents", href: "/content-management", icon: Podcast },
+  { name: "Posts", href: "/posts", icon: MessageSquare },
   { name: "Tokens", href: "/token-management", icon: Wallet },
 ];
 
