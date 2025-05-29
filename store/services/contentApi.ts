@@ -10,14 +10,20 @@ interface ContentResponse {
 
 interface Report {
   id: string;
-  reason: string;
-  description: string;
-  createdAt: string;
-  reportedBy: {
-    id: string;
-    name: string;
-    picture: string;
+  reasonDetails: {
+    mainReason: string;
+    subReason: string | null;
+    details: string;
   };
+  reporterId: string;
+  reportedEntityType: string;
+  reportedEntityId: string;
+  status: string;
+  resolutionDetails: string | null;
+  resolutionDate: string | null;
+  resolverId: string | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface ReportsResponse {
@@ -49,8 +55,12 @@ export const contentApi = createApi({
     }),
     getContentReports: builder.query<ReportsResponse, { contentId: string; token?: string }>({
       query: ({ contentId, token }) => ({
-        url: `/reel/report/${contentId}`,
+        url: `/reel/report?reportedEntityType=reel&reportedEntityId=${contentId}`,
         headers: token ? { Authorization: `Bearer ${token}` } : {},
+      }),
+      transformResponse: (response: Report[]) => ({
+        data: response,
+        total: response.length
       }),
     }),
   }),

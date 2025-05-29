@@ -14,7 +14,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { ContentItem } from "@/types/content";
-import { Calendar, CheckCircle, Trash2, User, XCircle } from "lucide-react";
+import { Calendar, CheckCircle, Trash2, User, XCircle, AlertTriangle } from "lucide-react";
 import { AnalysisTab } from "./analysis-tab";
 import { MediaPreview } from "./media-preview";
 import { NotesTab } from "./notes-tab";
@@ -124,8 +124,8 @@ export function ContentDrawer({
                   <div>
                     <h3 className="text-sm font-medium mb-2">Hashtags</h3>
                     <div className="flex flex-wrap gap-2">
-                      {content.hashtags.map((tag) => (
-                        <Badge key={tag} variant="secondary">
+                      {content.hashtags.map((tag, index) => (
+                        <Badge key={`${tag}-${index}`} variant="secondary">
                           #{tag}
                         </Badge>
                       ))}
@@ -172,32 +172,38 @@ export function ContentDrawer({
                 {/* Reports List */}
                 {reportsData?.data && reportsData.data.length > 0 && (
                   <div>
-                    <h3 className="text-sm font-medium mb-2">Reports ({reportsData.total})</h3>
+                    <h3 className="text-sm font-medium mb-2">Reports ({reportsData.data.length})</h3>
                     <div className="space-y-3">
                       {reportsData.data.map((report) => (
                         <div key={report.id} className="p-3 bg-muted rounded-lg">
                           <div className="flex items-center gap-2 mb-2">
-                            <Avatar className="h-6 w-6">
-                              <AvatarImage
-                                src={report.reportedBy.picture}
-                                alt={report.reportedBy.name}
-                              />
-                              <AvatarFallback>
-                                {report.reportedBy.name.charAt(0)}
-                              </AvatarFallback>
-                            </Avatar>
+                            <AlertTriangle className="h-4 w-4 text-destructive" />
                             <span className="text-sm font-medium">
-                              {report.reportedBy.name}
+                              {report.reasonDetails.mainReason}
                             </span>
+                            {report.reasonDetails.subReason && (
+                              <Badge variant="secondary">{report.reasonDetails.subReason}</Badge>
+                            )}
                             <span className="text-xs text-muted-foreground">
                               {formatDate(report.createdAt)}
                             </span>
                           </div>
                           <div className="space-y-1">
-                            <Badge variant="destructive">{report.reason}</Badge>
+                            <Badge variant="destructive">{report.status}</Badge>
                             <p className="text-sm text-muted-foreground">
-                              {report.description}
+                              {report.reasonDetails.details}
                             </p>
+                            {report.resolutionDetails && (
+                              <div className="mt-2 pt-2 border-t">
+                                <p className="text-sm">
+                                  <span className="font-medium">Resolution: </span>
+                                  {report.resolutionDetails}
+                                </p>
+                                <p className="text-xs text-muted-foreground">
+                                  Resolved on {formatDate(report.resolutionDate || '')}
+                                </p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       ))}
