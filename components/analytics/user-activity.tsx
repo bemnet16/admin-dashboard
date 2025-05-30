@@ -41,7 +41,12 @@ export function UserActivity() {
           <CardContent className="flex items-center p-0">
             <Avatar className="h-10 w-10">
               <AvatarImage src={activity.avatar} alt={activity.user} />
-              <AvatarFallback>{activity.user.charAt(0)}</AvatarFallback>
+              <AvatarFallback>
+                {activity.user
+                  .split(" ")
+                  .map((n) => n[0])
+                  .join("")}
+              </AvatarFallback>
             </Avatar>
             <div className="ml-4 flex-1 space-y-1">
               <p className="text-sm font-medium leading-none">{activity.user}</p>

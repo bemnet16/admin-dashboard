@@ -198,7 +198,10 @@ export function UserTransactionsTab() {
                             alt={tx.userName}
                           />
                           <AvatarFallback>
-                            {tx.userName.charAt(0)}
+                            {tx.userName
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
                           </AvatarFallback>
                         </Avatar>
                         <div>

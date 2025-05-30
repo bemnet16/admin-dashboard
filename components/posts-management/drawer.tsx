@@ -27,6 +27,7 @@ interface PostsDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onPostAction: (postId: string, action: string) => void;
+  isDeleting: boolean;
 }
 
 const formatDate = (date: string | null | undefined) => {
@@ -54,6 +55,7 @@ export function PostsDrawer({
   isOpen,
   onClose,
   onPostAction,
+  isDeleting,
 }: PostsDrawerProps) {
   const { data: session } = useSession();
   const { data: reportsData } = useGetPostReportsQuery(
@@ -192,14 +194,24 @@ export function PostsDrawer({
           <DrawerFooter className="border-t">
             <div className="flex justify-end gap-2">
               <Button
+                variant="destructive"
+                onClick={() => onPostAction(post.id, "delete")}
+                disabled={isDeleting}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {isDeleting ? "Deleting..." : "Delete"}
+              </Button>
+              <Button
                 variant="outline"
                 onClick={() => onPostAction(post.id, "reject")}
+                disabled={isDeleting}
               >
                 <ShieldAlert className="h-4 w-4 mr-2" />
                 Reject
               </Button>
               <Button
                 onClick={() => onPostAction(post.id, "approve")}
+                disabled={isDeleting}
               >
                 <ShieldCheck className="h-4 w-4 mr-2" />
                 Approve

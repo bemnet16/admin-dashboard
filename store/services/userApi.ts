@@ -2,7 +2,7 @@ import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 // Define the User type based on your backend response
 export interface User {
-  _id: string;
+  id: string;
   email: string;
   firstName: string;
   lastName: string;
@@ -18,7 +18,7 @@ export interface User {
 
 export const userApi = createApi({
   reducerPath: "userApi",
-  baseQuery: fetchBaseQuery({ baseUrl: "http://localhost:3005/auth/profiles" }),
+  baseQuery: fetchBaseQuery({ baseUrl: "http://localhost:3005/auth/users" }),
   tagTypes: ["User"],
   endpoints: (builder) => ({
     getUsers: builder.query<User[], void>({

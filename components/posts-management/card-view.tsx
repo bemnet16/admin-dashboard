@@ -11,13 +11,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Eye, MoreHorizontal, ShieldAlert, ShieldCheck, Image, Video } from "lucide-react";
+import { Eye, MoreHorizontal, ShieldAlert, ShieldCheck, Image, Video, Trash2 } from "lucide-react";
 import type { Post } from "@/types/post";
 
 interface CardViewProps {
   posts: Post[];
   onViewPost: (post: Post) => void;
   onPostAction: (postId: string, action: string) => void;
+  isDeleting: boolean;
 }
 
 const formatDate = (date: string | null | undefined) => {
@@ -49,6 +50,7 @@ export function CardView({
   posts,
   onViewPost,
   onPostAction,
+  isDeleting,
 }: CardViewProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -107,7 +109,7 @@ export function CardView({
               </div>
             </div>
           </CardContent>
-          <CardFooter className="p-4 pt-2 flex justify-end gap-2 border-t">
+          <CardFooter className="p-4 pt-0 flex justify-end gap-2">
             <Button
               variant="ghost"
               size="icon"
@@ -117,22 +119,18 @@ export function CardView({
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" disabled={isDeleting}>
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={() => onPostAction(post.id, "approve")}
+                  onClick={() => onPostAction(post.id, "delete")}
+                  className="text-destructive"
+                  disabled={isDeleting}
                 >
-                  <ShieldCheck className="h-4 w-4 mr-2" />
-                  Approve
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onPostAction(post.id, "reject")}
-                >
-                  <ShieldAlert className="h-4 w-4 mr-2" />
-                  Reject
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Post
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

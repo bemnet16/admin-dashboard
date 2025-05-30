@@ -159,11 +159,12 @@ export function ContentList({
               <TableBody>
                 {paginatedItems.length === 0 ? (
                   <TableRow>
-                    <TableCell
-                      colSpan={8}
-                      className="text-center h-24 text-muted-foreground"
-                    >
-                      No content found matching your filters
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      <div className="flex flex-col items-center gap-2">
+                        <ImageIcon className="h-8 w-8" />
+                        <p>No content found</p>
+                        <p className="text-sm">Try adjusting your filters or search criteria</p>
+                      </div>
                     </TableCell>
                   </TableRow>
                 ) : (
@@ -177,7 +178,10 @@ export function ContentList({
                               alt={item.user.name}
                             />
                             <AvatarFallback>
-                              {item.user.name.charAt(0)}
+                              {item.user.name
+                                .split(" ")
+                                .map((n) => n[0])
+                                .join("")}
                             </AvatarFallback>
                           </Avatar>
                           <div>
@@ -287,7 +291,10 @@ export function ContentList({
                             alt={item.user.name}
                           />
                           <AvatarFallback>
-                            {item.user.name.charAt(0)}
+                            {item.user.name
+                              .split(" ")
+                              .map((n) => n[0])
+                              .join("")}
                           </AvatarFallback>
                         </Avatar>
                         <div>

@@ -12,13 +12,20 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { formatDistanceToNow } from "date-fns";
-import { Eye } from "lucide-react";
+import { Eye, MoreHorizontal, Trash2 } from "lucide-react";
 import type { Post } from "@/types/post";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface PostsTableProps {
   posts: Post[];
   onViewPost: (post: Post) => void;
   onPostAction: (postId: string, action: string) => void;
+  isDeleting: boolean;
 }
 
 const formatDate = (date: string | null | undefined) => {
@@ -30,7 +37,7 @@ const formatDate = (date: string | null | undefined) => {
   }
 };
 
-export function PostsTable({ posts, onViewPost }: PostsTableProps) {
+export function PostsTable({ posts, onViewPost, onPostAction, isDeleting }: PostsTableProps) {
   return (
     <div className="rounded-md border">
       <Table>
@@ -91,13 +98,32 @@ export function PostsTable({ posts, onViewPost }: PostsTableProps) {
               </TableCell>
               <TableCell>{formatDate(post.createdAt)}</TableCell>
               <TableCell className="text-right">
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onViewPost(post)}
-                >
-                  <Eye className="h-4 w-4" />
-                </Button>
+                <div className="flex items-center justify-end gap-2">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => onViewPost(post)}
+                  >
+                    <Eye className="h-4 w-4" />
+                  </Button>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" disabled={isDeleting}>
+                        <MoreHorizontal className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => onPostAction(post.id, "delete")}
+                        className="text-destructive"
+                        disabled={isDeleting}
+                      >
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Post
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
               </TableCell>
             </TableRow>
           ))}

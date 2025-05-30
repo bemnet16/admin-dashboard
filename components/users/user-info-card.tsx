@@ -49,7 +49,12 @@ export function UserInfoCard({ user }: UserInfoCardProps) {
               src={user.avatarUrl || "/placeholder.svg"}
               alt={user.fullName}
             />
-            <AvatarFallback>{user.fullName.charAt(0)}</AvatarFallback>
+            <AvatarFallback>
+              {user.fullName
+                .split(" ")
+                .map((n) => n[0])
+                .join("")}
+            </AvatarFallback>
           </Avatar>
           <div className="flex-1 space-y-2 pt-4">
             <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">

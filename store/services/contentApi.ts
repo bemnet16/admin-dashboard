@@ -63,6 +63,14 @@ export const contentApi = createApi({
         total: response.length
       }),
     }),
+    deleteContent: builder.mutation<void, { id: string; token: string }>({
+      query: ({ id, token }) => ({
+        url: `/reel/${id}`,
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+      invalidatesTags: ["Content"],
+    }),
   }),
 });
 
@@ -70,4 +78,5 @@ export const {
   useGetContentsQuery,
   useGetContentByIdQuery,
   useGetContentReportsQuery,
+  useDeleteContentMutation,
 } = contentApi; 

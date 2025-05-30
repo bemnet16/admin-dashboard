@@ -25,9 +25,10 @@ import { PostsPagination } from "@/components/posts-management/pagination";
 import { ContentPagination } from "@/components/content-management/pagination";
 import { CardView } from "@/components/posts-management/card-view";
 import type { Post } from "@/types/post";
-import { useGetPostsQuery, useApprovePostMutation, useRejectPostMutation } from "@/store/services/postsApi";
+import { useGetPostsQuery, useApprovePostMutation, useRejectPostMutation, useDeletePostMutation } from "@/store/services/postsApi";
 import { useToast } from "@/components/ui/use-toast";
 import { Grid, List } from "lucide-react";
+import { useDeleteContentMutation } from "@/store/services/contentApi";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -50,6 +51,8 @@ export default function ContentManagementPage() {
 
   // Posts state
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
+  const [isDeletingPost, setIsDeletingPost] = useState(false);
+  const [isDeletingContent, setIsDeletingContent] = useState(false);
   const { toast } = useToast();
 
   // Fetch content data using RTK Query
@@ -85,6 +88,8 @@ export default function ContentManagementPage() {
   );
   const [approvePost] = useApprovePostMutation();
   const [rejectPost] = useRejectPostMutation();
+  const [deletePost] = useDeletePostMutation();
+  const [deleteContent] = useDeleteContentMutation();
 
   // Filter content based on selected filters and search query
   const filteredContent = contentResponse?.filter((item) => {
@@ -130,10 +135,34 @@ export default function ContentManagementPage() {
     setIsDrawerOpen(false);
   };
 
-  const handleContentAction = (contentId: string, action: string) => {
-    console.log(`Action ${action} on content ${contentId}`);
-    if (isDrawerOpen) {
-      setIsDrawerOpen(false);
+  const handleContentAction = async (contentId: string, action: string) => {
+    if (!session?.user.accessToken) return;
+
+    try {
+      if (action === "delete") {
+        setIsDeletingContent(true);
+        await deleteContent({ id: contentId, token: session.user.accessToken }).unwrap();
+        toast({
+          title: "Content deleted",
+          description: "The content has been deleted successfully.",
+        });
+        if (isDrawerOpen) {
+          setIsDrawerOpen(false);
+        }
+      } else {
+        console.log(`Action ${action} on content ${contentId}`);
+        if (isDrawerOpen) {
+          setIsDrawerOpen(false);
+        }
+      }
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "An error occurred while processing the content.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDeletingContent(false);
     }
   };
 
@@ -157,6 +186,13 @@ export default function ContentManagementPage() {
           title: "Post rejected",
           description: "The post has been rejected successfully.",
         });
+      } else if (action === "delete") {
+        setIsDeletingPost(true);
+        await deletePost({ postId, token: session.user.accessToken }).unwrap();
+        toast({
+          title: "Post deleted",
+          description: "The post has been deleted successfully.",
+        });
       }
       setSelectedPost(null);
       refetchPosts();
@@ -166,6 +202,8 @@ export default function ContentManagementPage() {
         description: "An error occurred while processing the post.",
         variant: "destructive",
       });
+    } finally {
+      setIsDeletingPost(false);
     }
   };
 
@@ -314,12 +352,14 @@ export default function ContentManagementPage() {
                 contentItems={filteredContent}
                 onViewContent={handleViewContent}
                 onContentAction={handleContentAction}
+                isDeleting={isDeletingContent}
               />
             ) : (
               <ContentCardView
                 contentItems={filteredContent}
                 onViewContent={handleViewContent}
                 onContentAction={handleContentAction}
+                isDeleting={isDeletingContent}
               />
             )}
           </div>
@@ -344,12 +384,14 @@ export default function ContentManagementPage() {
               posts={filteredPosts}
               onViewPost={handleViewPost}
               onPostAction={handlePostAction}
+              isDeleting={isDeletingPost}
             />
           ) : (
             <PostsTable
               posts={filteredPosts}
               onViewPost={handleViewPost}
               onPostAction={handlePostAction}
+              isDeleting={isDeletingPost}
             />
           )}
           {postsData && (
@@ -371,6 +413,7 @@ export default function ContentManagementPage() {
           isOpen={isDrawerOpen}
           onClose={handleCloseDrawer}
           onContentAction={handleContentAction}
+          isDeleting={isDeletingContent}
         />
       ) : (
         <PostsDrawer
@@ -378,6 +421,7 @@ export default function ContentManagementPage() {
           isOpen={!!selectedPost}
           onClose={() => setSelectedPost(null)}
           onPostAction={handlePostAction}
+          isDeleting={isDeletingPost}
         />
       )}
     </div>

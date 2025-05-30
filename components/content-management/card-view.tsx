@@ -11,13 +11,14 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { Eye, MoreHorizontal, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Eye, MoreHorizontal, ShieldAlert, ShieldCheck, Trash2 } from "lucide-react";
 import type { ContentItem } from "@/types/content";
 
 interface CardViewProps {
   contentItems: ContentItem[];
   onViewContent: (content: ContentItem) => void;
   onContentAction: (contentId: string, action: string) => void;
+  isDeleting: boolean;
 }
 
 const formatDate = (date: string | null | undefined) => {
@@ -51,6 +52,7 @@ export function CardView({
   contentItems,
   onViewContent,
   onContentAction,
+  isDeleting,
 }: CardViewProps) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -90,8 +92,8 @@ export function CardView({
                 {truncateText(item.description, 100)}
               </p>
               <div className="flex flex-wrap gap-2">
-                {item.hashtags.map((tag) => (
-                  <Badge key={tag} variant="secondary">
+                {item.hashtags.map((tag, index) => (
+                  <Badge key={`${tag}-${index}`} variant="secondary">
                     #{tag}
                   </Badge>
                 ))}
@@ -122,22 +124,18 @@ export function CardView({
             </Button>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
-                <Button variant="ghost" size="icon">
+                <Button variant="ghost" size="icon" disabled={isDeleting}>
                   <MoreHorizontal className="h-4 w-4" />
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem
-                  onClick={() => onContentAction(item.id, "approve")}
+                  onClick={() => onContentAction(item.id, "delete")}
+                  className="text-destructive"
+                  disabled={isDeleting}
                 >
-                  <ShieldCheck className="h-4 w-4 mr-2" />
-                  Approve
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onContentAction(item.id, "reject")}
-                >
-                  <ShieldAlert className="h-4 w-4 mr-2" />
-                  Reject
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Reel
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

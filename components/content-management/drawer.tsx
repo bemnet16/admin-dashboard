@@ -32,6 +32,7 @@ interface ContentDrawerProps {
   isOpen: boolean;
   onClose: () => void;
   onContentAction: (contentId: string, action: string) => void;
+  isDeleting: boolean;
 }
 
 const formatDate = (date: string | null | undefined) => {
@@ -61,6 +62,7 @@ export function ContentDrawer({
   isOpen,
   onClose,
   onContentAction,
+  isDeleting,
 }: ContentDrawerProps) {
   const { data: session } = useSession();
   const { data: reportsData } = useGetContentReportsQuery(
@@ -248,14 +250,24 @@ export function ContentDrawer({
           <DrawerFooter className="border-t">
             <div className="flex justify-end gap-2">
               <Button
+                variant="destructive"
+                onClick={() => onContentAction(content.id, "delete")}
+                disabled={isDeleting}
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                {isDeleting ? "Deleting..." : "Delete"}
+              </Button>
+              <Button
                 variant="outline"
                 onClick={() => onContentAction(content.id, "reject")}
+                disabled={isDeleting}
               >
                 <ShieldAlert className="h-4 w-4 mr-2" />
                 Reject
               </Button>
               <Button
                 onClick={() => onContentAction(content.id, "approve")}
+                disabled={isDeleting}
               >
                 <ShieldCheck className="h-4 w-4 mr-2" />
                 Approve

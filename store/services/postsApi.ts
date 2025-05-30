@@ -45,6 +45,15 @@ export const postsApi = createApi({
         },
       }),
     }),
+    deletePost: builder.mutation<void, { postId: string; token: string }>({
+      query: ({ postId, token }) => ({
+        url: `/posts/${postId}`,
+        method: "DELETE",
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      }),
+    }),
   }),
 });
 
@@ -53,4 +62,5 @@ export const {
   useGetPostReportsQuery,
   useApprovePostMutation,
   useRejectPostMutation,
+  useDeletePostMutation,
 } = postsApi; 

@@ -36,7 +36,6 @@ const navigation = [
   { name: "Analytics", href: "/analytics", icon: BarChart2 },
   { name: "Users", href: "/users", icon: Users2 },
   { name: "Contents", href: "/content-management", icon: Podcast },
-  { name: "Posts", href: "/posts", icon: MessageSquare },
   { name: "Tokens", href: "/token-management", icon: Wallet },
 ];
 

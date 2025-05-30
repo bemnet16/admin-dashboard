@@ -18,13 +18,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Eye, MoreHorizontal, ShieldAlert, ShieldCheck } from "lucide-react";
+import { Eye, MoreHorizontal, ShieldAlert, ShieldCheck, Trash2 } from "lucide-react";
 import type { ContentItem, ContentAction } from "@/types/content";
 
 interface TableViewProps {
   contentItems: ContentItem[];
   onViewContent: (content: ContentItem) => void;
   onContentAction: (contentId: string, action: string) => void;
+  isDeleting: boolean;
 }
 
 const formatDate = (date: string | null | undefined) => {
@@ -58,6 +59,7 @@ export function TableView({
   contentItems,
   onViewContent,
   onContentAction,
+  isDeleting,
 }: TableViewProps) {
 
   console.log(contentItems, "ccccc")
@@ -73,7 +75,7 @@ export function TableView({
             <TableHead>Posted</TableHead>
             <TableHead>Reports</TableHead>
             <TableHead>AI Score</TableHead>
-            <TableHead className="w-[100px]">Actions</TableHead>
+            <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -135,8 +137,8 @@ export function TableView({
                 <Badge variant="outline">{item.reports || 0}</Badge>
               </TableCell>
               <TableCell>{item.aiScore || 0}</TableCell>
-              <TableCell>
-                <div className="flex items-center gap-2">
+              <TableCell className="text-right">
+                <div className="flex items-center justify-end gap-2">
                   <Button
                     variant="ghost"
                     size="icon"
@@ -146,22 +148,18 @@ export function TableView({
                   </Button>
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
+                      <Button variant="ghost" size="icon" disabled={isDeleting}>
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem
-                        onClick={() => onContentAction(item.id, "approve")}
+                        onClick={() => onContentAction(item.id, "delete")}
+                        className="text-destructive"
+                        disabled={isDeleting}
                       >
-                        <ShieldCheck className="h-4 w-4 mr-2" />
-                        Approve
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => onContentAction(item.id, "reject")}
-                      >
-                        <ShieldAlert className="h-4 w-4 mr-2" />
-                        Reject
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Reel
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
