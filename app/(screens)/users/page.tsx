@@ -176,7 +176,7 @@ export default function UsersPage() {
   }
 
   return (
-    <div className="container mx-auto py-6">
+    <div className="mx-auto py-6">
       <Card>
         <CardHeader>
           <CardTitle>Users Management</CardTitle>

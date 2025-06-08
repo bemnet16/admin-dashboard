@@ -50,7 +50,7 @@ export default function UserProfilePage() {
       try {
         setIsLoading(true);
         setError(null);
-        const response = await fetch(`http://localhost:3005/auth/user/${id}`, {
+        const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/user/${id}`, {
           headers: {
             Authorization: `Bearer ${session?.user.accessToken}`,
           },

@@ -17,7 +17,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       },
       authorize: async (credentials) => {
         try {
-          const res = await fetch("http://localhost:3005/auth/login", {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify(credentials),
@@ -26,7 +26,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
          
           if (res.ok && user) {
             try {
-              const userRes = await fetch(`http://localhost:3005/auth/profile`, {
+              const userRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/auth/profile`, {
                 headers: {
                   Authorization: `Bearer ${user.accessToken}`,
                 },

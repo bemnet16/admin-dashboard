@@ -4,7 +4,7 @@ import type { PostsResponse, ReportsResponse } from "@/types/post";
 export const postsApi = createApi({
   reducerPath: "postsApi",
   baseQuery: fetchBaseQuery({
-    baseUrl: "http://localhost:3005/social",
+    baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/social`,
   }),
   endpoints: (builder) => ({
     getPosts: builder.query<PostsResponse, { token: string; page?: number; limit?: number }>({
