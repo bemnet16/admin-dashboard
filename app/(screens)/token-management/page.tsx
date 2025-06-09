@@ -154,14 +154,14 @@ export default function TokenManagementPage() {
                 tokenStats.circulation.toLocaleString()
               )}
             </div>
-            <p className="text-xs text-muted-foreground">
+            {/* <p className="text-xs text-muted-foreground">
               {tokenStats.circulationChange >= 0 ? "+" : ""}
               {tokenStats.circulationChange.toLocaleString()} from last month
-            </p>
+            </p> */}
           </CardContent>
         </Card>
 
-        <Card>
+        {/* <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Total Stars Minted
@@ -181,9 +181,9 @@ export default function TokenManagementPage() {
               {tokenStats.mintedChange.toLocaleString()} from last month
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
-        <Card>
+        {/* <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Total Stars Burned
@@ -203,28 +203,28 @@ export default function TokenManagementPage() {
               {tokenStats.burnedChange.toLocaleString()} from last month
             </div>
           </CardContent>
-        </Card>
+        </Card> */}
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
             <CardTitle className="text-sm font-medium">
               Token Sale Price
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
+            <Coins className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
               {isLoading ? (
                 <div className="h-8 w-32 bg-muted animate-pulse rounded" />
               ) : (
-                `$${tokenStats.price.toFixed(2)}`
+                `${tokenStats.price.toFixed(2)} MATIC`
               )}
             </div>
-            <div className="flex items-center text-xs text-green-500">
+            {/* <div className="flex items-center text-xs text-green-500">
               <ArrowUp className="h-3 w-3 mr-1" />
               {tokenStats.priceChange > 0 ? "+" : ""}
               {tokenStats.priceChange.toFixed(2)}% from last month
-            </div>
+            </div> */}
           </CardContent>
         </Card>
       </div>

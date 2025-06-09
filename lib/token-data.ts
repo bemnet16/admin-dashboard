@@ -1,13 +1,75 @@
-// Mock token statistics
-export const mockTokenStats = {
-  circulation: 10000000,
-  circulationChange: 250000,
-  minted: 12000000,
-  mintedChange: 300000,
-  burned: 2000000,
-  burnedChange: 50000,
-  price: 0.05,
-  priceChange: 5.2,
+import { ethers } from "ethers";
+import { CONTRACT_CONFIG } from "./contract-config";
+
+// Token statistics interface
+export interface TokenStats {
+  circulation: number;
+  circulationChange: number;
+  minted: number;
+  mintedChange: number;
+  burned: number;
+  burnedChange: number;
+  price: number;
+  priceChange: number;
+  saleActive: boolean;
+  lastUpdated: string;
+}
+
+// Function to fetch real token statistics
+export async function fetchTokenStats(): Promise<TokenStats> {
+  try {
+    const provider = new ethers.JsonRpcProvider(CONTRACT_CONFIG.RPC_URL);
+    const tokenContract = new ethers.Contract(
+      CONTRACT_CONFIG.STARS_TOKEN_ADDRESS,
+      ["function totalSupply() view returns (uint256)"],
+      provider
+    );
+
+    const platformContract = new ethers.Contract(
+      CONTRACT_CONFIG.STARS_PLATFORM_ADDRESS,
+      ["function rate() view returns (uint256)"],
+      provider
+    );
+
+    // Fetch current total supply
+    const totalSupply = await tokenContract.totalSupply();
+    const currentCirculation = Number(ethers.formatEther(totalSupply));
+
+    // Fetch token rate (price)
+    const rate = await platformContract.rate();
+    const currentPrice = Number(ethers.formatEther(rate));
+
+    // For now, we'll use the mock data for changes since we don't have historical data
+    // In a real implementation, you would fetch this from a database or API
+    return {
+      circulation: currentCirculation,
+      circulationChange: 250_000, // This should be calculated from historical data
+      minted: 12_000_000, // This should be tracked in a database
+      mintedChange: 300_000, // This should be calculated from historical data
+      burned: 2_000_000, // This should be tracked in a database
+      burnedChange: 50_000, // This should be calculated from historical data
+      price: 0.01,
+      priceChange: 5.20, // This should be calculated from historical data
+      saleActive: true,
+      lastUpdated: new Date().toISOString(),
+    };
+  } catch (error) {
+    console.error("Error fetching token stats:", error);
+    // Return mock data as fallback
+    return mockTokenStats;
+  }
+}
+
+// Mock token statistics (used as fallback)
+export const mockTokenStats: TokenStats = {
+  circulation: 10_000_000,
+  circulationChange: 250_000,
+  minted: 12_000_000,
+  mintedChange: 300_000,
+  burned: 2_000_000,
+  burnedChange: 50_000,
+  price: 0.01,
+  priceChange: 0.00,
   saleActive: true,
   lastUpdated: new Date().toISOString(),
 };
