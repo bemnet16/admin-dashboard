@@ -21,6 +21,16 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import {
   Pagination,
   PaginationContent,
   PaginationEllipsis,
@@ -39,272 +49,25 @@ import {
   MessageSquare,
   ShieldCheck,
   Trash2,
+  Loader2,
 } from "lucide-react";
 import { MediaGallery } from "./media-gallery";
+import { useDeletePostMutation } from "@/store/services/postsApi";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
 
 interface ContentTabProps {
   contentData: any[];
+  onContentDeleted?: () => void;
 }
 
-export function ContentTab({ contentData }: ContentTabProps) {
-  const [contentPage, setContentPage] = useState(1);
-  const [expandedContent, setExpandedContent] = useState<string | null>(null);
-  const [typeFilter, setTypeFilter] = useState<string>("All");
-  const [statusFilter, setStatusFilter] = useState<string>("All");
-  const itemsPerPage = 5;
-
-  // Handle expanding/collapsing content
-  const handleExpandContent = (contentId: string) => {
-    // If we're expanding a different content than what's currently expanded
-    if (expandedContent !== contentId) {
-      // Find all video elements and pause them
-      const videos = document.querySelectorAll("video");
-      videos.forEach((video) => {
-        video.pause();
-      });
-    }
-
-    // Toggle the expanded state
-    setExpandedContent(expandedContent === contentId ? null : contentId);
-  };
-
-  // Apply filters to content data
-  const filteredContent = contentData.filter((item) => {
-    const matchesType = typeFilter === "All" || item.type === typeFilter;
-    const matchesStatus =
-      statusFilter === "All" || item.status === statusFilter;
-    return matchesType && matchesStatus;
-  });
-
-  const totalContentPages = Math.ceil(filteredContent.length / itemsPerPage);
-  const paginatedContent = filteredContent.slice(
-    (contentPage - 1) * itemsPerPage,
-    contentPage * itemsPerPage
-  );
-
-  // Reset to first page when filters change
-  const handleFilterChange = (type: string, status: string) => {
-    setTypeFilter(type);
-    setStatusFilter(status);
-    setContentPage(1);
-  };
-
-  const formatDateTime = (dateString: string) => {
-    const date = new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-    const time = new Date(dateString).toLocaleTimeString("en-US", {
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-    return `${date} at ${time}`;
-  };
-
-  // Add this useEffect to handle pausing videos when content is collapsed
-  useEffect(() => {
-    // Find all video elements and pause them when content is collapsed
-    if (expandedContent === null) {
-      const videos = document.querySelectorAll("video");
-      videos.forEach((video) => {
-        video.pause();
-      });
-    }
-  }, [expandedContent]);
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>User Content</CardTitle>
-        <CardDescription>
-          View and manage this user's posts and comments
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        {/* Content Filters */}
-        <div className="flex flex-wrap items-center gap-3 mb-6">
-          <div className="flex items-center gap-2">
-            <Filter className="h-4 w-4 text-muted-foreground" />
-            <span className="text-sm font-medium">Filters:</span>
-          </div>
-
-          {/* Content Type Filter */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8">
-                Type: {typeFilter}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuLabel>Content Type</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                <DropdownMenuItem
-                  onClick={() => handleFilterChange("All", statusFilter)}
-                  className={typeFilter === "All" ? "bg-muted" : ""}
-                >
-                  All
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => handleFilterChange("Post", statusFilter)}
-                  className={typeFilter === "Post" ? "bg-muted" : ""}
-                >
-                  Posts
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => handleFilterChange("Comment", statusFilter)}
-                  className={typeFilter === "Comment" ? "bg-muted" : ""}
-                >
-                  Comments
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Status Filter */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="outline" size="sm" className="h-8">
-                Status: {statusFilter}
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="start">
-              <DropdownMenuLabel>Content Status</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuGroup>
-                <DropdownMenuItem
-                  onClick={() => handleFilterChange(typeFilter, "All")}
-                  className={statusFilter === "All" ? "bg-muted" : ""}
-                >
-                  All
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => handleFilterChange(typeFilter, "Approved")}
-                  className={statusFilter === "Approved" ? "bg-muted" : ""}
-                >
-                  Approved
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => handleFilterChange(typeFilter, "Reported")}
-                  className={statusFilter === "Reported" ? "bg-muted" : ""}
-                >
-                  Reported
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => handleFilterChange(typeFilter, "Deleted")}
-                  className={statusFilter === "Deleted" ? "bg-muted" : ""}
-                >
-                  Deleted
-                </DropdownMenuItem>
-              </DropdownMenuGroup>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Reset Filters */}
-          {(typeFilter !== "All" || statusFilter !== "All") && (
-            <Button
-              variant="ghost"
-              size="sm"
-              className="h-8 text-muted-foreground"
-              onClick={() => handleFilterChange("All", "All")}
-            >
-              Reset filters
-            </Button>
-          )}
-
-          {/* Results count */}
-          <div className="ml-auto text-sm text-muted-foreground">
-            {filteredContent.length}{" "}
-            {filteredContent.length === 1 ? "item" : "items"}
-          </div>
-        </div>
-
-        <div className="space-y-6">
-          {paginatedContent.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              No content found
-            </div>
-          ) : (
-            paginatedContent.map((item) => (
-              <ContentItem
-                key={item.id}
-                item={item}
-                isExpanded={expandedContent === item.id}
-                onToggleExpand={() => handleExpandContent(item.id)}
-                formatDateTime={formatDateTime}
-              />
-            ))
-          )}
-        </div>
-
-        {/* Pagination */}
-        {filteredContent.length > itemsPerPage && (
-          <div className="flex justify-center mt-6">
-            <Pagination>
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    onClick={() =>
-                      setContentPage((prev) => Math.max(prev - 1, 1))
-                    }
-                    className={
-                      contentPage === 1
-                        ? "pointer-events-none opacity-50"
-                        : "cursor-pointer"
-                    }
-                  />
-                </PaginationItem>
-
-                {Array.from({ length: totalContentPages }).map((_, i) => {
-                  const page = i + 1;
-                  if (
-                    page === 1 ||
-                    page === totalContentPages ||
-                    (page >= contentPage - 1 && page <= contentPage + 1)
-                  ) {
-                    return (
-                      <PaginationItem key={page}>
-                        <PaginationLink
-                          onClick={() => setContentPage(page)}
-                          isActive={page === contentPage}
-                        >
-                          {page}
-                        </PaginationLink>
-                      </PaginationItem>
-                    );
-                  }
-                  if (page === 2 || page === totalContentPages - 1) {
-                    return (
-                      <PaginationItem key={`ellipsis-${page}`}>
-                        <PaginationEllipsis />
-                      </PaginationItem>
-                    );
-                  }
-                  return null;
-                })}
-
-                <PaginationItem>
-                  <PaginationNext
-                    onClick={() =>
-                      setContentPage((prev) =>
-                        Math.min(prev + 1, totalContentPages)
-                      )
-                    }
-                    className={
-                      contentPage === totalContentPages
-                        ? "pointer-events-none opacity-50"
-                        : "cursor-pointer"
-                    }
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
-          </div>
-        )}
-      </CardContent>
-    </Card>
-  );
+interface ContentItemProps {
+  item: any;
+  isExpanded: boolean;
+  onToggleExpand: () => void;
+  onDelete: () => void;
+  formatDateTime: (date: string) => string;
+  isDeleting?: boolean;
 }
 
 // Content Item Component
@@ -312,13 +75,10 @@ function ContentItem({
   item,
   isExpanded,
   onToggleExpand,
+  onDelete,
   formatDateTime,
-}: {
-  item: any;
-  isExpanded: boolean;
-  onToggleExpand: () => void;
-  formatDateTime: (date: string) => string;
-}) {
+  isDeleting,
+}: ContentItemProps) {
   return (
     <Card
       className={cn(
@@ -409,25 +169,359 @@ function ContentItem({
               </Button>
             )}
 
-            {item.status !== "Deleted" && (
-              <Button size="sm" variant="outline" className="gap-2">
-                <Trash2 className="h-4 w-4 text-red-500" />
-                Delete
-              </Button>
-            )}
+            <Button 
+              size="sm" 
+              variant="outline" 
+              className="gap-2"
+              onClick={onDelete}
+              disabled={isDeleting}
+            >
+              {isDeleting ? (
+                <>
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                <>
+                  <Trash2 className="h-4 w-4 text-red-500" />
+                  Delete
+                </>
+              )}
+            </Button>
 
             <Button size="sm" variant="outline" className="gap-2">
               <AlertCircle className="h-4 w-4 text-amber-500" />
               Flag as Inappropriate
             </Button>
-
-            <Button size="sm" variant="outline" className="gap-2 ml-auto">
-              <ExternalLink className="h-4 w-4" />
-              View Full Post
-            </Button>
           </div>
         </div>
       </div>
     </Card>
+  );
+}
+
+export function ContentTab({ contentData, onContentDeleted }: ContentTabProps) {
+  const [contentPage, setContentPage] = useState(1);
+  const [expandedContent, setExpandedContent] = useState<string | null>(null);
+  const [typeFilter, setTypeFilter] = useState<string>("All");
+  const [statusFilter, setStatusFilter] = useState<string>("All");
+  const [postToDelete, setPostToDelete] = useState<string | null>(null);
+  const [deletingPostId, setDeletingPostId] = useState<string | null>(null);
+  const itemsPerPage = 5;
+  const { data: session } = useSession();
+  const [deletePost] = useDeletePostMutation();
+
+  // Handle expanding/collapsing content
+  const handleExpandContent = (contentId: string) => {
+    // If we're expanding a different content than what's currently expanded
+    if (expandedContent !== contentId) {
+      // Find all video elements and pause them
+      const videos = document.querySelectorAll("video");
+      videos.forEach((video) => {
+        video.pause();
+      });
+    }
+
+    // Toggle the expanded state
+    setExpandedContent(expandedContent === contentId ? null : contentId);
+  };
+
+  // Handle post deletion
+  const handleDeletePost = async (postId: string) => {
+    try {
+      if (!session?.user.accessToken) {
+        toast.error("Authentication required");
+        return;
+      }
+
+      setDeletingPostId(postId);
+      await deletePost({
+        postId,
+        token: session.user.accessToken,
+      }).unwrap();
+
+      toast.success("Post deleted successfully");
+      if (onContentDeleted) {
+        onContentDeleted();
+      }
+    } catch (error: any) {
+      const errorMessage = error?.data?.message || error?.message || "Failed to delete post";
+      toast.error(errorMessage);
+      console.error("Delete post error:", error);
+    } finally {
+      setPostToDelete(null);
+      setDeletingPostId(null);
+    }
+  };
+
+  // Apply filters to content data
+  const filteredContent = contentData.filter((item) => {
+    const matchesType = typeFilter === "All" || item.type === typeFilter;
+    const matchesStatus =
+      statusFilter === "All" || item.status === statusFilter;
+    return matchesType && matchesStatus;
+  });
+
+  const totalContentPages = Math.ceil(filteredContent.length / itemsPerPage);
+  const paginatedContent = filteredContent.slice(
+    (contentPage - 1) * itemsPerPage,
+    contentPage * itemsPerPage
+  );
+
+  // Reset to first page when filters change
+  const handleFilterChange = (type: string, status: string) => {
+    setTypeFilter(type);
+    setStatusFilter(status);
+    setContentPage(1);
+  };
+
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString).toLocaleDateString("en-US", {
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    });
+    const time = new Date(dateString).toLocaleTimeString("en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+    return `${date} at ${time}`;
+  };
+
+  // Add this useEffect to handle pausing videos when content is collapsed
+  useEffect(() => {
+    // Find all video elements and pause them when content is collapsed
+    if (expandedContent === null) {
+      const videos = document.querySelectorAll("video");
+      videos.forEach((video) => {
+        video.pause();
+      });
+    }
+  }, [expandedContent]);
+
+  return (
+    <>
+      <Card>
+        <CardHeader>
+          <CardTitle>User Content</CardTitle>
+          <CardDescription>
+            View and manage this user's posts and comments
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {/* Content Filters */}
+          <div className="flex flex-wrap items-center gap-3 mb-6">
+            <div className="flex items-center gap-2">
+              <Filter className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium">Filters:</span>
+            </div>
+
+            {/* Content Type Filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8">
+                  Type: {typeFilter}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Content Type</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuItem
+                    onClick={() => handleFilterChange("All", statusFilter)}
+                    className={typeFilter === "All" ? "bg-muted" : ""}
+                  >
+                    All
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleFilterChange("Post", statusFilter)}
+                    className={typeFilter === "Post" ? "bg-muted" : ""}
+                  >
+                    Posts
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleFilterChange("Comment", statusFilter)}
+                    className={typeFilter === "Comment" ? "bg-muted" : ""}
+                  >
+                    Comments
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Status Filter */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8">
+                  Status: {statusFilter}
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                <DropdownMenuLabel>Content Status</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuGroup>
+                  <DropdownMenuItem
+                    onClick={() => handleFilterChange(typeFilter, "All")}
+                    className={statusFilter === "All" ? "bg-muted" : ""}
+                  >
+                    All
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleFilterChange(typeFilter, "Approved")}
+                    className={statusFilter === "Approved" ? "bg-muted" : ""}
+                  >
+                    Approved
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleFilterChange(typeFilter, "Reported")}
+                    className={statusFilter === "Reported" ? "bg-muted" : ""}
+                  >
+                    Reported
+                  </DropdownMenuItem>
+                  <DropdownMenuItem
+                    onClick={() => handleFilterChange(typeFilter, "Deleted")}
+                    className={statusFilter === "Deleted" ? "bg-muted" : ""}
+                  >
+                    Deleted
+                  </DropdownMenuItem>
+                </DropdownMenuGroup>
+              </DropdownMenuContent>
+            </DropdownMenu>
+
+            {/* Reset Filters */}
+            {(typeFilter !== "All" || statusFilter !== "All") && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 text-muted-foreground"
+                onClick={() => handleFilterChange("All", "All")}
+              >
+                Reset filters
+              </Button>
+            )}
+
+            {/* Results count */}
+            <div className="ml-auto text-sm text-muted-foreground">
+              {filteredContent.length}{" "}
+              {filteredContent.length === 1 ? "item" : "items"}
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            {paginatedContent.length === 0 ? (
+              <div className="text-center py-8 text-muted-foreground">
+                No content found
+              </div>
+            ) : (
+              paginatedContent.map((item) => (
+                <ContentItem
+                  key={item.id}
+                  item={item}
+                  isExpanded={expandedContent === item.id}
+                  onToggleExpand={() => handleExpandContent(item.id)}
+                  onDelete={() => setPostToDelete(item.id)}
+                  formatDateTime={formatDateTime}
+                  isDeleting={deletingPostId === item.id}
+                />
+              ))
+            )}
+          </div>
+
+          {/* Pagination */}
+          {filteredContent.length > itemsPerPage && (
+            <div className="flex justify-center mt-6">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      onClick={() =>
+                        setContentPage((prev) => Math.max(prev - 1, 1))
+                      }
+                      className={
+                        contentPage === 1
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }
+                    />
+                  </PaginationItem>
+
+                  {Array.from({ length: totalContentPages }).map((_, i) => {
+                    const page = i + 1;
+                    if (
+                      page === 1 ||
+                      page === totalContentPages ||
+                      (page >= contentPage - 1 && page <= contentPage + 1)
+                    ) {
+                      return (
+                        <PaginationItem key={page}>
+                          <PaginationLink
+                            onClick={() => setContentPage(page)}
+                            isActive={page === contentPage}
+                          >
+                            {page}
+                          </PaginationLink>
+                        </PaginationItem>
+                      );
+                    }
+                    if (page === 2 || page === totalContentPages - 1) {
+                      return (
+                        <PaginationItem key={`ellipsis-${page}`}>
+                          <PaginationEllipsis />
+                        </PaginationItem>
+                      );
+                    }
+                    return null;
+                  })}
+
+                  <PaginationItem>
+                    <PaginationNext
+                      onClick={() =>
+                        setContentPage((prev) =>
+                          Math.min(prev + 1, totalContentPages)
+                        )
+                      }
+                      className={
+                        contentPage === totalContentPages
+                          ? "pointer-events-none opacity-50"
+                          : "cursor-pointer"
+                      }
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <AlertDialog open={!!postToDelete} onOpenChange={() => setPostToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete the post
+              and remove it from our servers.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => postToDelete && handleDeletePost(postToDelete)}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              disabled={!!deletingPostId}
+            >
+              {deletingPostId ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete"
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+    </>
   );
 }

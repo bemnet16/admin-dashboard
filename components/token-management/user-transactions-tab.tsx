@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -51,33 +51,82 @@ import {
   Search,
   ShoppingCart,
   Sparkles,
+  Plus,
 } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { CONTRACT_CONFIG, getEtherscanUrl } from "@/lib/contract-config";
+
+interface Transaction {
+  hash: string;
+  from: string;
+  to: string;
+  value: string;
+  timeStamp: string;
+  isError: string;
+}
 
 export function UserTransactionsTab() {
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 5;
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Filter transactions based on search query and type filter
-  const filteredTransactions = mockTransactions.filter((tx) => {
-    const matchesSearch =
-      searchQuery === "" ||
-      tx.userAddress.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      tx.userName.toLowerCase().includes(searchQuery.toLowerCase());
+  useEffect(() => {
+    fetchTransactions();
+  }, []);
 
-    const matchesType = typeFilter === "all" || tx.type === typeFilter;
+  const fetchTransactions = async () => {
+    try {
+      setIsLoading(true);
+      setError(null);
 
-    return matchesSearch && matchesType;
-  });
+      const response = await fetch(
+        `${CONTRACT_CONFIG.ETHERSCAN_API_URL}?module=account&action=txlist&address=${CONTRACT_CONFIG.STARS_PLATFORM_ADDRESS}&startblock=0&endblock=99999999&sort=desc&apikey=${CONTRACT_CONFIG.ETHERSCAN_API_KEY}`
+      );
 
-  // Calculate pagination
-  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
-  const paginatedTransactions = filteredTransactions.slice(
-    (currentPage - 1) * itemsPerPage,
-    currentPage * itemsPerPage
-  );
+      const data = await response.json();
+
+      if (data.status === "1" && data.result) {
+        setTransactions(data.result);
+      } else {
+        throw new Error(data.message || "Failed to fetch transactions");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to fetch transactions");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const getTransactionType = (tx: Transaction) => {
+    if (tx.to.toLowerCase() === CONTRACT_CONFIG.STARS_TOKEN_ADDRESS.toLowerCase()) {
+      return "mint";
+    } else if (tx.from.toLowerCase() === CONTRACT_CONFIG.STARS_TOKEN_ADDRESS.toLowerCase()) {
+      return "burn";
+    } else {
+      return "transfer";
+    }
+  };
+
+  const getTransactionTypeIcon = (type: string) => {
+    switch (type) {
+      case "mint":
+        return <Plus className="h-4 w-4 text-green-500" />;
+      case "burn":
+        return <Flame className="h-4 w-4 text-red-500" />;
+      case "transfer":
+        return <Gift className="h-4 w-4 text-blue-500" />;
+      default:
+        return null;
+    }
+  };
+
+  const truncateAddress = (address: string) => {
+    return `${address.substring(0, 6)}...${address.substring(address.length - 4)}`;
+  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -97,26 +146,21 @@ export function UserTransactionsTab() {
     });
   };
 
-  const truncateAddress = (address: string) => {
-    return `${address.substring(0, 6)}...${address.substring(
-      address.length - 4
-    )}`;
-  };
+  const filteredTransactions = transactions.filter((tx) => {
+    const type = getTransactionType(tx);
+    const matchesSearch = 
+      tx.from.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tx.to.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesType = typeFilter === "all" || type === typeFilter;
+    return matchesSearch && matchesType;
+  });
 
-  const getTransactionTypeIcon = (type: string) => {
-    switch (type) {
-      case "buy":
-        return <ShoppingCart className="h-4 w-4 text-blue-500" />;
-      case "gift":
-        return <Gift className="h-4 w-4 text-purple-500" />;
-      case "burn":
-        return <Flame className="h-4 w-4 text-red-500" />;
-      case "mint":
-        return <Sparkles className="h-4 w-4 text-green-500" />;
-      default:
-        return null;
-    }
-  };
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+  const paginatedTransactions = filteredTransactions.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -145,7 +189,7 @@ export function UserTransactionsTab() {
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
               type="search"
-              placeholder="Search by wallet address or name..."
+              placeholder="Search by wallet address..."
               className="pl-8 w-full"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -157,10 +201,9 @@ export function UserTransactionsTab() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Types</SelectItem>
-              <SelectItem value="buy">Buy</SelectItem>
-              <SelectItem value="gift">Gift</SelectItem>
-              <SelectItem value="burn">Burn</SelectItem>
               <SelectItem value="mint">Mint</SelectItem>
+              <SelectItem value="burn">Burn</SelectItem>
+              <SelectItem value="transfer">Transfer</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -169,48 +212,51 @@ export function UserTransactionsTab() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>User</TableHead>
                 <TableHead>Type</TableHead>
+                <TableHead>From</TableHead>
+                <TableHead>To</TableHead>
                 <TableHead className="text-right">Amount</TableHead>
-                <TableHead className="hidden md:table-cell">Date</TableHead>
-                <TableHead className="hidden md:table-cell">Status</TableHead>
-                <TableHead>Transaction Hash</TableHead>
+                <TableHead className="text-right">Date</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {paginatedTransactions.length === 0 ? (
+              {isLoading ? (
                 <TableRow>
-                  <TableCell
-                    colSpan={6}
-                    className="text-center py-8 text-muted-foreground"
-                  >
+                  <TableCell colSpan={6} className="text-center py-8">
+                    Loading transactions...
+                  </TableCell>
+                </TableRow>
+              ) : error ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8 text-red-500">
+                    {error}
+                  </TableCell>
+                </TableRow>
+              ) : filteredTransactions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6} className="text-center py-8">
                     No transactions found
                   </TableCell>
                 </TableRow>
               ) : (
-                paginatedTransactions.map((tx: any) => (
-                  <TableRow key={tx.id}>
+                paginatedTransactions.map((tx) => {
+                  const type = getTransactionType(tx);
+                  const amount = parseFloat(tx.value) / 1e18; // Convert from wei to ETH
+                  const date = new Date(parseInt(tx.timeStamp) * 1000).toLocaleString();
+
+                  return (
+                    <TableRow key={tx.hash}>
                     <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-8 w-8">
-                          <AvatarImage
-                            src={tx.userAvatar || "/placeholder.svg"}
-                            alt={tx.userName}
-                          />
-                          <AvatarFallback>
-                            {tx.userName
-                              .split(" ")
-                              .map((n) => n[0])
-                              .join("")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <div className="font-medium text-sm">
-                            {tx.userName}
+                        <div className="flex items-center gap-1">
+                          {getTransactionTypeIcon(type)}
+                          <span className="capitalize">{type}</span>
                           </div>
-                          <div className="flex items-center text-xs text-muted-foreground">
-                            <span className="hidden sm:inline">
-                              {truncateAddress(tx.userAddress)}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-1">
+                          <span className="font-mono text-sm">
+                            {truncateAddress(tx.from)}
                             </span>
                             <TooltipProvider>
                               <Tooltip>
@@ -219,14 +265,10 @@ export function UserTransactionsTab() {
                                     variant="ghost"
                                     size="icon"
                                     className="h-6 w-6"
-                                    onClick={() =>
-                                      copyToClipboard(tx.userAddress)
-                                    }
+                                  onClick={() => copyToClipboard(tx.from)}
                                   >
                                     <Copy className="h-3 w-3" />
-                                    <span className="sr-only">
-                                      Copy address
-                                    </span>
+                                  <span className="sr-only">Copy address</span>
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -235,29 +277,11 @@ export function UserTransactionsTab() {
                               </Tooltip>
                             </TooltipProvider>
                           </div>
-                        </div>
-                      </div>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1">
-                        {getTransactionTypeIcon(tx.type)}
-                        <span className="capitalize">{tx.type}</span>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right font-medium">
-                      {tx.type === "burn" ? "-" : "+"}
-                      {tx.amount.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell text-sm text-muted-foreground">
-                      {formatDate(tx.date)}
-                    </TableCell>
-                    <TableCell className="hidden md:table-cell">
-                      {getStatusBadge(tx.status)}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-1">
-                        <span className="font-mono text-xs">
-                          {truncateAddress(tx.txHash)}
+                          <span className="font-mono text-sm">
+                            {truncateAddress(tx.to)}
                         </span>
                         <TooltipProvider>
                           <Tooltip>
@@ -266,19 +290,26 @@ export function UserTransactionsTab() {
                                 variant="ghost"
                                 size="icon"
                                 className="h-6 w-6"
-                                onClick={() => copyToClipboard(tx.txHash)}
+                                  onClick={() => copyToClipboard(tx.to)}
                               >
                                 <Copy className="h-3 w-3" />
-                                <span className="sr-only">
-                                  Copy transaction hash
-                                </span>
+                                  <span className="sr-only">Copy address</span>
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Copy transaction hash</p>
+                                <p>Copy wallet address</p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-right font-medium">
+                        {amount.toLocaleString()} STARS
+                      </TableCell>
+                      <TableCell className="text-right text-muted-foreground">
+                        {date}
+                      </TableCell>
+                      <TableCell className="text-right">
                         <TooltipProvider>
                           <Tooltip>
                             <TooltipTrigger asChild>
@@ -289,7 +320,7 @@ export function UserTransactionsTab() {
                                 asChild
                               >
                                 <a
-                                  href={`https://etherscan.io/tx/${tx.txHash}`}
+                                  href={getEtherscanUrl(tx.hash)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                 >
@@ -305,10 +336,10 @@ export function UserTransactionsTab() {
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
-                      </div>
                     </TableCell>
                   </TableRow>
-                ))
+                  );
+                })
               )}
             </TableBody>
           </Table>

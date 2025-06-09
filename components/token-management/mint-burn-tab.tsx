@@ -13,10 +13,15 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Flame, Sparkles, Wallet } from "lucide-react";
+import { Flame, Sparkles, Wallet, ExternalLink } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { CONTRACT_CONFIG, getContractUrl } from "@/lib/contract-config";
+import { useWallet } from "@/lib/wallet-context";
+import { mintTokens, burnTokens } from "@/lib/contract-interactions";
+import { ethers } from "ethers";
 
 export function MintBurnTab() {
+  const { address, isConnected, isConnecting, connect } = useWallet();
   const [mintAddress, setMintAddress] = useState("");
   const [mintAmount, setMintAmount] = useState("");
   const [burnAddress, setBurnAddress] = useState("");
@@ -25,6 +30,15 @@ export function MintBurnTab() {
   const [isBurning, setIsBurning] = useState(false);
 
   const handleMint = async () => {
+    if (!isConnected || !window.ethereum) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to mint tokens.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!mintAddress || !mintAmount || Number.parseInt(mintAmount) <= 0) {
       toast({
         title: "Invalid input",
@@ -37,9 +51,11 @@ export function MintBurnTab() {
     setIsMinting(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      const tx = await mintTokens(signer, mintAddress, Number(mintAmount));
+      
       toast({
         title: "Tokens minted successfully",
         description: `${Number.parseInt(
@@ -53,11 +69,10 @@ export function MintBurnTab() {
       // Reset form
       setMintAddress("");
       setMintAmount("");
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Mint operation failed",
-        description:
-          "There was an error processing your request. Please try again.",
+        description: error.message || "There was an error processing your request. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -66,6 +81,15 @@ export function MintBurnTab() {
   };
 
   const handleBurn = async () => {
+    if (!isConnected || !window.ethereum) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to burn tokens.",
+        variant: "destructive",
+      });
+      return;
+    }
+
     if (!burnAddress || !burnAmount || Number.parseInt(burnAmount) <= 0) {
       toast({
         title: "Invalid input",
@@ -78,9 +102,11 @@ export function MintBurnTab() {
     setIsBurning(true);
 
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      const tx = await burnTokens(signer, Number(burnAmount));
+      
       toast({
         title: "Tokens burned successfully",
         description: `${Number.parseInt(
@@ -94,11 +120,10 @@ export function MintBurnTab() {
       // Reset form
       setBurnAddress("");
       setBurnAmount("");
-    } catch (error) {
+    } catch (error: any) {
       toast({
         title: "Burn operation failed",
-        description:
-          "There was an error processing your request. Please try again.",
+        description: error.message || "There was an error processing your request. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -166,7 +191,7 @@ export function MintBurnTab() {
           <Button
             className="w-full"
             onClick={handleMint}
-            disabled={isMinting || !mintAddress || !mintAmount}
+            disabled={isMinting || !mintAddress || !mintAmount || !isConnected}
           >
             {isMinting ? (
               <>
@@ -260,7 +285,7 @@ export function MintBurnTab() {
             variant="destructive"
             className="w-full"
             onClick={handleBurn}
-            disabled={isBurning || !burnAddress || !burnAmount}
+            disabled={isBurning || !burnAddress || !burnAmount || !isConnected}
           >
             {isBurning ? (
               <>
@@ -299,40 +324,49 @@ export function MintBurnTab() {
       {/* Information Card */}
       <Card className="md:col-span-2">
         <CardHeader>
-          <CardTitle>Important Information</CardTitle>
+          <CardTitle>Contract Information</CardTitle>
+          <CardDescription>
+            View and interact with the token contracts
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div>
-              <h3 className="font-medium mb-1">Minting Tokens</h3>
-              <p className="text-sm text-muted-foreground">
-                Minting creates new tokens and adds them to the total supply.
-                This operation should be performed carefully as it increases the
-                token circulation and may affect the token value.
-              </p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 rounded-lg border">
+              <div>
+                <h3 className="font-medium">Stars Token Contract</h3>
+                <p className="text-sm text-muted-foreground">
+                  {CONTRACT_CONFIG.STARS_TOKEN_ADDRESS}
+                </p>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <a
+                  href={getContractUrl(CONTRACT_CONFIG.STARS_TOKEN_ADDRESS)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  View on Etherscan
+                </a>
+              </Button>
             </div>
 
-            <Separator />
-
-            <div>
-              <h3 className="font-medium mb-1">Burning Tokens</h3>
-              <p className="text-sm text-muted-foreground">
-                Burning permanently removes tokens from circulation, reducing
-                the total supply. This operation cannot be reversed and should
-                be used with caution.
-              </p>
-            </div>
-
-            <Separator />
-
-            <div>
-              <h3 className="font-medium mb-1">Transaction Confirmation</h3>
-              <p className="text-sm text-muted-foreground">
-                Both minting and burning operations require blockchain
-                confirmation. You will need to confirm the transaction with your
-                connected wallet. These operations may take some time to
-                complete depending on network conditions.
-              </p>
+            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 p-4 rounded-lg border">
+              <div>
+                <h3 className="font-medium">Platform Contract</h3>
+                <p className="text-sm text-muted-foreground">
+                  {CONTRACT_CONFIG.STARS_PLATFORM_ADDRESS}
+                </p>
+              </div>
+              <Button variant="outline" size="sm" asChild>
+                <a
+                  href={getContractUrl(CONTRACT_CONFIG.STARS_PLATFORM_ADDRESS)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  View on Etherscan
+                </a>
+              </Button>
             </div>
           </div>
         </CardContent>

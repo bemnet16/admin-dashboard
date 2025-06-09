@@ -188,7 +188,7 @@ export const MediaGallery = ({
           <img
             src={mediaItems[0].url || "/placeholder.svg"}
             alt="Post content"
-            className="w-full object-cover max-h-[400px]"
+            className="w-full h-auto object-contain max-h-[400px]"
           />
         ) : (
           <VideoPlayer
@@ -234,7 +234,7 @@ export const MediaGallery = ({
           <img
             src={activeItem.url || "/placeholder.svg"}
             alt="Post content"
-            className="w-full object-cover max-h-[400px]"
+            className="w-full h-auto object-contain max-h-[400px]"
           />
         ) : (
           <VideoPlayer

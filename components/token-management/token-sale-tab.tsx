@@ -14,8 +14,21 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
-import { AlertCircle, DollarSign, Save } from "lucide-react";
+import { AlertCircle, DollarSign, Save, Gift, Settings, Wallet } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import { useWallet } from "@/lib/wallet-context";
+import { ethers } from "ethers";
+import {
+  buyStars,
+  giftStars,
+  setFeaturePrice,
+  withdrawMATIC,
+  withdrawStars,
+  refillStars,
+  getTokenRate,
+  getFeaturePrice,
+  isContractOwner,
+} from "@/lib/contract-interactions";
 
 interface TokenSaleTabProps {
   currentPrice: number;
@@ -23,9 +36,22 @@ interface TokenSaleTabProps {
 }
 
 export function TokenSaleTab({ currentPrice, saleActive }: TokenSaleTabProps) {
+  const { address, isConnected, isConnecting, connect } = useWallet();
   const [price, setPrice] = useState(currentPrice.toString());
   const [isActive, setIsActive] = useState(saleActive);
-  const [isSaving, setIsSaving] = useState(false);
+  const [isSettingPrice, setIsSettingPrice] = useState(false);
+  const [isSettingSale, setIsSettingSale] = useState(false);
+  const [isWithdrawing, setIsWithdrawing] = useState(false);
+  const [isRefilling, setIsRefilling] = useState(false);
+  const [isGifting, setIsGifting] = useState(false);
+  const [isSettingFeature, setIsSettingFeature] = useState(false);
+  const [giftAmount, setGiftAmount] = useState("");
+  const [giftRecipient, setGiftRecipient] = useState("");
+  const [featureName, setFeatureName] = useState<string>("");
+  const [featurePriceValue, setFeaturePriceValue] = useState<string>("");
+  const [withdrawAmount, setWithdrawAmount] = useState("");
+  const [refillAmount, setRefillAmount] = useState("");
+  const [buyAmount, setBuyAmount] = useState("");
 
   const handleSaveChanges = async () => {
     const newPrice = Number.parseFloat(price);
@@ -39,7 +65,7 @@ export function TokenSaleTab({ currentPrice, saleActive }: TokenSaleTabProps) {
       return;
     }
 
-    setIsSaving(true);
+    setIsSettingPrice(true);
 
     try {
       // Simulate API call
@@ -59,84 +85,382 @@ export function TokenSaleTab({ currentPrice, saleActive }: TokenSaleTabProps) {
         variant: "destructive",
       });
     } finally {
-      setIsSaving(false);
+      setIsSettingPrice(false);
+    }
+  };
+
+  const handleBuyStars = async () => {
+    if (!isConnected || !window.ethereum) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to buy tokens.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const amount = Number(buyAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({
+        title: "Invalid amount",
+        description: "Please enter a valid amount to buy.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSettingSale(true);
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      await buyStars(signer, amount);
+      toast({
+        title: "Purchase successful",
+        description: `Successfully purchased STARS tokens for ${amount.toLocaleString()} MATIC.`,
+      });
+      setBuyAmount("");
+    } catch (error) {
+      console.error("Error buying stars:", error);
+      toast({
+        title: "Purchase failed",
+        description: "Failed to buy STARS tokens. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSettingSale(false);
+    }
+  };
+
+  const handleGiftStars = async () => {
+    if (!isConnected || !window.ethereum) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to gift tokens.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const amount = Number(giftAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({
+        title: "Invalid amount",
+        description: "Please enter a valid amount to gift.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const trimmedRecipient = giftRecipient.trim();
+    if (!trimmedRecipient) {
+      toast({
+        title: "Invalid recipient",
+        description: "Please enter a valid recipient address.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGifting(true);
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      await giftStars(signer, trimmedRecipient, amount);
+      toast({
+        title: "Gift sent successfully",
+        description: `Successfully sent ${amount.toLocaleString()} STARS to ${trimmedRecipient.substring(0, 6)}...${trimmedRecipient.substring(trimmedRecipient.length - 4)}`,
+      });
+      setGiftAmount("");
+      setGiftRecipient("");
+    } catch (error) {
+      console.error("Error gifting stars:", error);
+      toast({
+        title: "Gift failed",
+        description: "Failed to gift STARS tokens. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGifting(false);
+    }
+  };
+
+  const handleSetFeaturePrice = async () => {
+    if (!isConnected || !window.ethereum) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to set feature prices.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!featureName) {
+      toast({
+        title: "Invalid feature name",
+        description: "Please enter a feature name.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const price = Number(featurePriceValue);
+    if (isNaN(price) || price <= 0) {
+      toast({
+        title: "Invalid price",
+        description: "Please enter a valid price.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSettingFeature(true);
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const receipt = await setFeaturePrice(signer, featureName, price);
+      console.log("Transaction receipt:", receipt);
+      
+      toast({
+        title: "Success",
+        description: "Feature price set successfully",
+      });
+      setFeatureName("");
+      setFeaturePriceValue("");
+    } catch (error: any) {
+      console.error("Error setting feature price:", error);
+      if (error.message?.includes("Only the contract owner")) {
+        toast({
+          title: "Unauthorized",
+          description: "Only the contract owner can set feature prices.",
+          variant: "destructive",
+        });
+      } else if (error.message?.includes("rejected")) {
+        toast({
+          title: "Transaction rejected",
+          description: "You rejected the transaction in your wallet.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: "Failed to set feature price",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsSettingFeature(false);
+    }
+  };
+
+  const handleWithdrawMATIC = async () => {
+    if (!isConnected || !window.ethereum) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to withdraw MATIC.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsWithdrawing(true);
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      await withdrawMATIC(signer);
+      
+      toast({
+        title: "Withdrawal successful",
+        description: "Successfully withdrew MATIC from the platform.",
+      });
+    } catch (error) {
+      console.error("Error withdrawing MATIC:", error);
+      toast({
+        title: "Withdrawal failed",
+        description: "There was an error withdrawing MATIC. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsWithdrawing(false);
+    }
+  };
+
+  const handleWithdrawStars = async () => {
+    if (!isConnected || !window.ethereum) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to withdraw STARS.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const amount = Number(withdrawAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({
+        title: "Invalid amount",
+        description: "Please enter a valid amount to withdraw.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSettingSale(true);
+
+    try {
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      
+      await withdrawStars(signer, amount);
+      
+      toast({
+        title: "Withdrawal successful",
+        description: `Successfully withdrew ${amount.toLocaleString()} STARS from the platform.`,
+      });
+      
+      setWithdrawAmount("");
+    } catch (error) {
+      console.error("Error withdrawing STARS:", error);
+      toast({
+        title: "Withdrawal failed",
+        description: "There was an error withdrawing STARS. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSettingSale(false);
+    }
+  };
+
+  const handleRefillStars = async () => {
+    if (!isConnected || !window.ethereum) {
+      toast({
+        title: "Wallet not connected",
+        description: "Please connect your wallet to refill STARS.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const amount = Number(refillAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({
+        title: "Invalid amount",
+        description: "Please enter a valid amount to refill.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsRefilling(true);
+    try {
+      console.log("Refilling STARS:", { amount });
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const signerAddress = await signer.getAddress();
+      console.log("Got signer:", signerAddress);
+      
+      // Check if the user is the contract owner
+      const isOwner = await isContractOwner(signer);
+      if (!isOwner) {
+        toast({
+          title: "Unauthorized",
+          description: "Only the contract owner can refill STARS.",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      await refillStars(signer, amount);
+      
+      toast({
+        title: "Refill successful",
+        description: `Successfully refilled ${amount.toLocaleString()} STARS to the platform.`,
+      });
+      setRefillAmount("");
+    } catch (error: any) {
+      console.error("Error refilling STARS:", error);
+      if (error.message?.includes("Only the contract owner")) {
+        toast({
+          title: "Unauthorized",
+          description: "Only the contract owner can refill STARS.",
+          variant: "destructive",
+        });
+      } else if (error.message?.includes("Transaction was rejected")) {
+        toast({
+          title: "Transaction rejected",
+          description: "You rejected the transaction in your wallet.",
+          variant: "destructive",
+        });
+      } else if (error.message?.includes("Insufficient token allowance")) {
+        toast({
+          title: "Insufficient allowance",
+          description: "Please approve more STARS tokens for the platform contract.",
+          variant: "destructive",
+        });
+      } else if (error.message?.includes("Insufficient STARS balance")) {
+        toast({
+          title: "Insufficient balance",
+          description: "You don't have enough STARS tokens to refill.",
+          variant: "destructive",
+        });
+      } else {
+        toast({
+          title: "Refill failed",
+          description: error.message || "There was an error refilling STARS. Please try again.",
+          variant: "destructive",
+        });
+      }
+    } finally {
+      setIsRefilling(false);
     }
   };
 
   return (
-    <div className="grid gap-6 md:grid-cols-2">
-      <Card className="md:col-span-2">
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Buy Tokens Card */}
+     
+
+      {/* Gift Tokens Card */}
+      <Card>
         <CardHeader>
-          <CardTitle>Token Sale Settings</CardTitle>
-          <CardDescription>Configure the token sale parameters</CardDescription>
+          <CardTitle>Gift Tokens</CardTitle>
+          <CardDescription>
+            Send STARS tokens to another address
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-6">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-4 rounded-lg border">
-              <div>
-                <h3 className="font-medium">Token Sale Status</h3>
-                <p className="text-sm text-muted-foreground">
-                  Enable or disable the public token sale
-                </p>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch
-                  id="sale-active"
-                  checked={isActive}
-                  onCheckedChange={setIsActive}
-                />
-                <Label htmlFor="sale-active" className="font-medium">
-                  {isActive ? "Active" : "Inactive"}
-                </Label>
-              </div>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="giftRecipient">Recipient Address</Label>
+              <Input
+                id="giftRecipient"
+                placeholder="Enter recipient address"
+                value={giftRecipient}
+                onChange={(e) => setGiftRecipient(e.target.value)}
+                disabled={isGifting}
+              />
             </div>
-
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="token-price">Token Price (USD)</Label>
-                <div className="flex">
-                  <div className="bg-muted flex items-center px-3 rounded-l-md border border-r-0 border-input">
-                    <DollarSign className="h-4 w-4 text-muted-foreground" />
-                  </div>
-                  <Input
-                    id="token-price"
-                    type="number"
-                    placeholder="0.00"
-                    min="0.01"
-                    step="0.01"
-                    value={price}
-                    onChange={(e) => setPrice(e.target.value)}
-                    className="rounded-l-none"
-                  />
-                </div>
-                <p className="text-xs text-muted-foreground">
-                  Set the price for one STAR token in USD
-                </p>
-              </div>
-            </div>
-
-            <div className="flex items-start gap-4 p-4 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
-              <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 mt-0.5" />
-              <div>
-                <h4 className="font-medium text-amber-800 dark:text-amber-300">
-                  Important Notice
-                </h4>
-                <p className="text-sm text-amber-700 dark:text-amber-400">
-                  Changing the token price or sale status will affect all users
-                  immediately. Make sure you have communicated any changes to
-                  your community before updating these settings.
-                </p>
-              </div>
+            <div className="space-y-2">
+              <Label htmlFor="giftAmount">Amount to Gift</Label>
+              <Input
+                id="giftAmount"
+                type="number"
+                placeholder="Enter amount"
+                value={giftAmount}
+                onChange={(e) => setGiftAmount(e.target.value)}
+                disabled={isGifting}
+              />
             </div>
           </div>
         </CardContent>
         <CardFooter>
           <Button
-            onClick={handleSaveChanges}
-            disabled={isSaving}
-            className="ml-auto"
+            onClick={handleGiftStars}
+            disabled={isGifting || !isConnected}
+            className="w-full"
           >
-            {isSaving ? (
+            {isGifting ? (
               <>
                 <svg
                   className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
@@ -158,121 +482,225 @@ export function TokenSaleTab({ currentPrice, saleActive }: TokenSaleTabProps) {
                     d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
                   ></path>
                 </svg>
-                Saving Changes...
+                Processing...
               </>
             ) : (
-              <>
-                <Save className="mr-2 h-4 w-4" />
-                Save Changes
-              </>
+              "Send Gift"
             )}
           </Button>
         </CardFooter>
       </Card>
 
-      {/* Historical Price Card */}
+      {/* Set Feature Price Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Historical Pricing</CardTitle>
-          <CardDescription>Previous token price changes</CardDescription>
+          <CardTitle>Set Feature Price</CardTitle>
+          <CardDescription>
+            Configure the price for platform features
+          </CardDescription>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
-            <div className="border rounded-md divide-y">
-              <div className="p-3 flex justify-between items-center">
-                <div>
-                  <div className="font-medium">$0.05</div>
-                  <div className="text-xs text-muted-foreground">
-                    Current Price
-                  </div>
-                </div>
-                <div className="text-sm text-right">
-                  <div>May 1, 2023</div>
-                  <div className="text-xs text-muted-foreground">
-                    to Present
-                  </div>
-                </div>
-              </div>
-              <div className="p-3 flex justify-between items-center">
-                <div>
-                  <div className="font-medium">$0.04</div>
-                  <div className="text-xs text-muted-foreground">
-                    Previous Price
-                  </div>
-                </div>
-                <div className="text-sm text-right">
-                  <div>Feb 15, 2023</div>
-                  <div className="text-xs text-muted-foreground">
-                    to Apr 30, 2023
-                  </div>
-                </div>
-              </div>
-              <div className="p-3 flex justify-between items-center">
-                <div>
-                  <div className="font-medium">$0.03</div>
-                  <div className="text-xs text-muted-foreground">
-                    Initial Price
-                  </div>
-                </div>
-                <div className="text-sm text-right">
-                  <div>Jan 1, 2023</div>
-                  <div className="text-xs text-muted-foreground">
-                    to Feb 14, 2023
-                  </div>
-                </div>
-              </div>
+            <div>
+              <Label htmlFor="featureName">Feature Name</Label>
+              <Input
+                id="featureName"
+                placeholder="Enter feature name"
+                value={featureName}
+                onChange={(e) => setFeatureName(e.target.value)}
+                disabled={isSettingFeature}
+              />
             </div>
+            <div>
+              <Label htmlFor="featurePrice">Price (STARS)</Label>
+              <Input
+                id="featurePrice"
+                type="number"
+                placeholder="Enter price in STARS"
+                value={featurePriceValue}
+                onChange={(e) => setFeaturePriceValue(e.target.value)}
+                disabled={isSettingFeature}
+              />
+            </div>
+            <Button
+              onClick={handleSetFeaturePrice}
+              disabled={isSettingFeature || !isConnected}
+              className="w-full"
+            >
+              {isSettingFeature ? (
+                <>
+                  <svg
+                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                  Setting Price...
+                </>
+              ) : (
+                "Set Feature Price"
+              )}
+            </Button>
           </div>
         </CardContent>
       </Card>
 
-      {/* Sale Statistics Card */}
+      {/* Platform Funds Management Card */}
       <Card>
         <CardHeader>
-          <CardTitle>Sale Statistics</CardTitle>
-          <CardDescription>Token sale performance metrics</CardDescription>
+          <CardTitle>Platform Funds</CardTitle>
+          <CardDescription>
+            Manage platform funds and token reserves
+          </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
-              <div className="p-3 border rounded-md">
-                <div className="text-2xl font-bold">2,450</div>
-                <div className="text-sm text-muted-foreground">Total Sales</div>
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="withdrawAmount">Withdraw STARS</Label>
+                <Input
+                  id="withdrawAmount"
+                  type="number"
+                  placeholder="Enter amount"
+                  value={withdrawAmount}
+                  onChange={(e) => setWithdrawAmount(e.target.value)}
+                  disabled={isSettingSale}
+                />
               </div>
-              <div className="p-3 border rounded-md">
-                <div className="text-2xl font-bold">$12,250</div>
-                <div className="text-sm text-muted-foreground">Revenue</div>
-              </div>
-              <div className="p-3 border rounded-md">
-                <div className="text-2xl font-bold">245,000</div>
-                <div className="text-sm text-muted-foreground">Tokens Sold</div>
-              </div>
-              <div className="p-3 border rounded-md">
-                <div className="text-2xl font-bold">187</div>
-                <div className="text-sm text-muted-foreground">
-                  Unique Buyers
-                </div>
-              </div>
+              <Button
+                onClick={handleWithdrawStars}
+                disabled={isSettingSale || !isConnected}
+                className="w-full"
+              >
+                {isSettingSale ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Processing...
+                  </>
+                ) : (
+                  "Withdraw STARS"
+                )}
+              </Button>
             </div>
 
             <Separator />
 
-            <div>
-              <h3 className="font-medium mb-2">Recent Activity</h3>
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span>Last sale:</span>
-                  <span>2 hours ago</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Largest purchase:</span>
-                  <span>10,000 STARS</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Average purchase:</span>
-                  <span>1,310 STARS</span>
-                </div>
+            <div className="space-y-4">
+              <Button
+                onClick={handleWithdrawMATIC}
+                disabled={isWithdrawing || !isConnected}
+                className="w-full"
+              >
+                {isWithdrawing ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Processing...
+                  </>
+                ) : (
+                  "Withdraw MATIC"
+                )}
+              </Button>
+            </div>
+
+            <Separator />
+
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="refillAmount">Refill STARS</Label>
+                <Input
+                  id="refillAmount"
+                  type="number"
+                  placeholder="Enter amount"
+                  value={refillAmount}
+                  onChange={(e) => setRefillAmount(e.target.value)}
+                  disabled={isRefilling}
+                />
               </div>
+              <Button
+                onClick={handleRefillStars}
+                disabled={isRefilling || !isConnected}
+                className="w-full"
+              >
+                {isRefilling ? (
+                  <>
+                    <svg
+                      className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      ></circle>
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                      ></path>
+                    </svg>
+                    Processing...
+                  </>
+                ) : (
+                  "Refill STARS"
+                )}
+              </Button>
             </div>
           </div>
         </CardContent>

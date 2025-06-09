@@ -15,7 +15,7 @@ import { BalanceTab } from "@/components/users/balance-tab";
 import { ActionsTab } from "@/components/users/actions-tab";
 
 // Import mock data for tabs (temporary)
-import { contentData, transactionData } from "@/lib/mock-data";
+import { transactionData } from "@/lib/mock-data";
 
 interface UserData {
   id: string;
@@ -38,12 +38,94 @@ interface UserData {
   following: number;
 }
 
+interface ContentData {
+  id: string;
+  type: string;
+  contentType: string;
+  preview: string;
+  mediaItems?: {
+    type: string;
+    url: string;
+    thumbnailUrl?: string;
+  }[];
+  date: string;
+  likes: number;
+  shares: number;
+  status: string;
+}
+
+interface PostResponse {
+  id: string;
+  content: string;
+  files: string[];
+  commentIds: string[];
+  likedBy: string[];
+  createdAt: string;
+  updatedAt: string;
+  owner: {
+    id: string;
+    email: string;
+    firstName: string;
+    lastName: string;
+    picture: string;
+    role: string;
+    username: string;
+    bio: string;
+    profilePic: string;
+    following: string[];
+    followers: string[];
+    createdAt: string;
+    updatedAt: string;
+  };
+}
+
 export default function UserProfilePage() {
   const { id } = useParams();
   const { data: session } = useSession();
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [contentData, setContentData] = useState<ContentData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const fetchUserContent = async () => {
+    try {
+      const contentResponse = await fetch(`http://localhost:3000/social/posts/${id}/user`, {
+        headers: {
+          Authorization: `Bearer ${session?.user.accessToken}`,
+        },
+      });
+
+      if (!contentResponse.ok) {
+        throw new Error('Failed to fetch user content');
+      }
+
+      const contentData = await contentResponse.json();
+      
+      // Transform content data to match the expected format
+      const transformedContent: ContentData[] = contentData.data.map((post: PostResponse) => ({
+        id: post.id,
+        type: "Post",
+        contentType: post.files?.length > 0 ? "mixed" : "text",
+        preview: post.content || "No text content",
+        mediaItems: post.files?.map((fileUrl: string) => {
+          const fileType = fileUrl.toLowerCase().endsWith('.mp4') ? 'video' : 'image';
+          return {
+            type: fileType,
+            url: fileUrl,
+            thumbnailUrl: fileType === 'video' ? fileUrl : undefined
+          };
+        }),
+        date: post.createdAt,
+        likes: post.likedBy?.length || 0,
+        shares: 0, // API doesn't provide shares count
+        status: "Approved" // Default status since API doesn't provide it
+      }));
+
+      setContentData(transformedContent);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'An error occurred');
+    }
+  };
 
   useEffect(() => {
     const fetchUserData = async () => {
@@ -66,7 +148,7 @@ export default function UserProfilePage() {
         const transformedData: UserData = {
           ...data,
           fullName: `${data.firstName} ${data.lastName}`,
-          avatarUrl: data.profilePic || "/placeholder.svgl",
+          avatarUrl: data.profilePic || "/placeholder.svg",
           status: data.role === "Suspended" ? "Suspended" : "Active",
           verified: data.role === "Admin",
           joinDate: new Date().toLocaleDateString(), // You might want to get this from the API
@@ -77,6 +159,9 @@ export default function UserProfilePage() {
         };
         
         setUserData(transformedData);
+
+        // Fetch initial user content
+        await fetchUserContent();
       } catch (err) {
         setError(err instanceof Error ? err.message : 'An error occurred');
       } finally {
@@ -162,7 +247,10 @@ export default function UserProfilePage() {
 
         {/* Content Tab */}
         <TabsContent value="content" className="space-y-4">
-          <ContentTab contentData={contentData} />
+          <ContentTab 
+            contentData={contentData} 
+            onContentDeleted={fetchUserContent}
+          />
         </TabsContent>
 
         {/* Balance & Transactions Tab */}

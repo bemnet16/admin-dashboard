@@ -8,13 +8,14 @@ import { TopNav } from "@/components/top-nav";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SettingsProvider } from "@/contexts/settings-context";
 import type React from "react";
+import { WalletProvider } from "@/lib/wallet-context";
+import type { Metadata } from "next";
 
 const inter = Inter({ subsets: ["latin"] });
 
-export const metadata = {
-  title: "Ethio Social Media Admin Dashboard",
-  description: "A modern, responsive financial dashboard",
-  generator: "v0.dev",
+export const metadata: Metadata = {
+  title: "Stars Token Management",
+  description: "Manage your Stars token operations",
 };
 
 export default function RootLayout({
@@ -30,7 +31,9 @@ export default function RootLayout({
             <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
               <SettingsProvider>
                 <TooltipProvider delayDuration={0}>
-                  <div>{children}</div>
+                  <WalletProvider>
+                    <div>{children}</div>
+                  </WalletProvider>
                 </TooltipProvider>
               </SettingsProvider>
             </ThemeProvider>
