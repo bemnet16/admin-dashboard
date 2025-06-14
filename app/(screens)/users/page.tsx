@@ -437,10 +437,17 @@ export default function UsersPage() {
                           {format(new Date(user.createdAt), "MMM dd, yyyy")}
                         </TableCell>
                         <TableCell>
-                          <DropdownMenu>
+                        <Link
+                                  href={`/users/${user.id}`}
+                                  className="flex  items-center justify-center"
+                                >
+                                  <EyeIcon className=" h-4 w-4" />
+                                </Link>
+
+                          {/* <DropdownMenu>
                             <DropdownMenuTrigger asChild>
                               <Button variant="ghost" className="h-8 w-8 p-0">
-                                <MoreHorizontal className="h-4 w-4" />
+                                <EyeIcon className="h-4 w-4" />
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -472,7 +479,7 @@ export default function UsersPage() {
                                 </Link>
                               </DropdownMenuItem>
                             </DropdownMenuContent>
-                          </DropdownMenu>
+                          </DropdownMenu> */}
                         </TableCell>
                       </TableRow>
                     ))
