@@ -14,6 +14,7 @@ export interface User {
   followers: string[];
   createdAt: string;
   updatedAt: string;
+  gender?: string;
 }
 
 export const userApi = createApi({

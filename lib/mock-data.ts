@@ -239,3 +239,52 @@ export const transactionData = [
     date: "2023-09-10T19:00:00Z",
   },
 ];
+
+export const socialHealthData = {
+  overallScore: 85,
+  positiveInteractions: 156,
+  negativeReports: 3,
+  spamFlags: 1,
+  recentWarnings: [
+    {
+      type: "content",
+      message: "Your recent comment was flagged for potential toxicity",
+      date: "2024-03-15"
+    },
+    {
+      type: "behavior",
+      message: "Multiple rapid posts detected",
+      date: "2024-03-10"
+    }
+  ],
+  interactionMetrics: {
+    categories: {
+      political: 25,
+      religious: 15,
+      cultural: 30,
+      entertainment: 20,
+      technology: 10
+    },
+    sentiment: {
+      positive: 65,
+      neutral: 25,
+      negative: 10
+    },
+    toxicity: {
+      hateSpeech: 2,
+      harassment: 3,
+      misinformation: 1,
+      spam: 1
+    }
+  },
+  timeBasedData: [
+    { date: "2024-01", score: 75 },
+    { date: "2024-02", score: 82 },
+    { date: "2024-03", score: 85 }
+  ],
+  contentDistribution: [
+    { type: "Posts", count: 45 },
+    { type: "Comments", count: 89 },
+    { type: "Shares", count: 22 }
+  ]
+};

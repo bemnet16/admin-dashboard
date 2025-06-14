@@ -42,6 +42,7 @@ export interface Post {
     picture: string | null;
   };
   reports?: Report[];
+  reportCount?: number;
   status: "pending" | "approved" | "rejected";
 }
 

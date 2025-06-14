@@ -51,80 +51,8 @@ export function AnalyticsTab() {
           </SelectContent>
         </Select>
       </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold">Customer Segmentation</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={customerSegmentationData}>
-                <XAxis dataKey="segment" />
-                <YAxis />
-                <Tooltip />
-                <Bar dataKey="count" fill={theme === "dark" ? "#adfa1d" : "#0ea5e9"} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold">Customer Retention Rate</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart data={retentionRateData}>
-                <XAxis dataKey="month" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="rate" stroke={theme === "dark" ? "#adfa1d" : "#0ea5e9"} />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
-        <Card className="col-span-4">
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold">Channel Performance</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={channelPerformanceData}>
-                <XAxis dataKey="channel" />
-                <YAxis yAxisId="left" />
-                <YAxis yAxisId="right" orientation="right" />
-                <Tooltip />
-                <Bar yAxisId="left" dataKey="acquisitions" fill={theme === "dark" ? "#adfa1d" : "#0ea5e9"} />
-                <Bar yAxisId="right" dataKey="revenue" fill={theme === "dark" ? "#1e40af" : "#3b82f6"} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-        <Card className="col-span-3">
-          <CardHeader>
-            <CardTitle className="text-xl font-semibold">Key Metrics</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Customer Lifetime Value</p>
-              <p className="text-2xl font-bold">$1,250</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Net Promoter Score</p>
-              <p className="text-2xl font-bold">72</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Customer Acquisition Cost</p>
-              <p className="text-2xl font-bold">$75</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-muted-foreground">Average Order Value</p>
-              <p className="text-2xl font-bold">$120</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+     
+     
     </div>
   )
 }

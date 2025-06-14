@@ -13,9 +13,10 @@ import { UserInfoCard } from "@/components/users/user-info-card";
 import { ContentTab } from "@/components/users/content-tab";
 import { BalanceTab } from "@/components/users/balance-tab";
 import { ActionsTab } from "@/components/users/actions-tab";
+import { SocialHealthTab } from "@/components/users/social-health-tab";
 
 // Import mock data for tabs (temporary)
-import { transactionData } from "@/lib/mock-data";
+import { transactionData, socialHealthData } from "@/lib/mock-data";
 
 interface UserData {
   id: string;
@@ -89,7 +90,7 @@ export default function UserProfilePage() {
 
   const fetchUserContent = async () => {
     try {
-      const contentResponse = await fetch(`http://localhost:3000/social/posts/${id}/user`, {
+      const contentResponse = await fetch(`http://localhost:3000/social/posts/user/${id}`, {
         headers: {
           Authorization: `Bearer ${session?.user.accessToken}`,
         },
@@ -239,9 +240,10 @@ export default function UserProfilePage() {
 
       {/* Tabs */}
       <Tabs defaultValue="content" className="space-y-4">
-        <TabsList className="grid grid-cols-3 w-full md:w-auto">
+        <TabsList className="grid grid-cols-4 w-full md:w-auto">
           <TabsTrigger value="content">Content</TabsTrigger>
           <TabsTrigger value="balance">Balance & Transactions</TabsTrigger>
+          <TabsTrigger value="social-health">Social Health</TabsTrigger>
           <TabsTrigger value="actions">Admin Actions</TabsTrigger>
         </TabsList>
 
@@ -256,6 +258,11 @@ export default function UserProfilePage() {
         {/* Balance & Transactions Tab */}
         <TabsContent value="balance" className="space-y-4">
           <BalanceTab userData={userData} transactionData={transactionData} />
+        </TabsContent>
+
+        {/* Social Health Tab */}
+        <TabsContent value="social-health" className="space-y-4">
+          <SocialHealthTab userData={userData} socialHealthData={socialHealthData} />
         </TabsContent>
 
         {/* Admin Actions Tab */}

@@ -8,6 +8,7 @@ import { ReportsTab } from "@/components/analytics/reports-tab"
 import { NotificationsTab } from "@/components/analytics/notifications-tab"
 import { Button } from "@/components/ui/button"
 import { Download } from "lucide-react"
+import { UserCharts } from "@/components/analytics/user-charts"
 
 export default function AnalyticsPage() {
   const handleExportData = () => {
@@ -38,7 +39,7 @@ export default function AnalyticsPage() {
           <OverviewTab />
         </TabsContent>
         <TabsContent value="analytics" className="space-y-4">
-          <AnalyticsTab />
+          <UserCharts />
         </TabsContent>
         <TabsContent value="reports" className="space-y-4">
           <ReportsTab />
