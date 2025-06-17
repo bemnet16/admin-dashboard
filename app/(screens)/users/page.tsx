@@ -78,12 +78,9 @@ export default function UsersPage() {
     const fullName = `${user.firstName} ${user.lastName}`.toLowerCase();
     const matchesSearch =
       fullName.includes(searchQuery.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (user.username?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false);
+      user.email.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesStatus = statusFilter === "All" || 
-      (statusFilter === "Active" && user.role !== "Suspended") ||
-      (statusFilter === "Suspended" && user.role === "Suspended");
+    const matchesStatus = statusFilter === "All" || user.status === statusFilter.toLowerCase();
 
     const matchesRole = roleFilter === "All" || user.role === roleFilter;
 
@@ -177,9 +174,12 @@ export default function UsersPage() {
 
   return (
     <div className="mx-auto py-6">
+        <div className="mb-4" >
+          <h1 className="text-3xl font-bold tracking-tight">Users Management</h1>
+        </div>
       <Card>
         <CardHeader>
-          <CardTitle>Users Management</CardTitle>
+          <CardTitle></CardTitle>
         </CardHeader>
         <CardContent>
           <div className="space-y-4">
@@ -207,25 +207,14 @@ export default function UsersPage() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="All">All Status</SelectItem>
-                    <SelectItem value="Active">Active</SelectItem>
-                    <SelectItem value="Suspended">Suspended</SelectItem>
+                    <SelectItem value="active">Active</SelectItem>
+                    <SelectItem value="suspended">Suspended</SelectItem>
+                    <SelectItem value="inactive">Inactive</SelectItem>
+                    <SelectItem value="pending">Pending</SelectItem>
                   </SelectContent>
                 </Select>
 
-                <Select 
-                  value={roleFilter} 
-                  onValueChange={setRoleFilter}
-                >
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="All">All Roles</SelectItem>
-                    <SelectItem value="Admin">Admin</SelectItem>
-                    <SelectItem value="Moderator">Moderator</SelectItem>
-                    <SelectItem value="User">User</SelectItem>
-                  </SelectContent>
-                </Select>
+                
 
                 <Popover>
                   <PopoverTrigger asChild>
@@ -299,20 +288,7 @@ export default function UsersPage() {
                   </PopoverContent>
                 </Popover>
 
-                <Select
-                  value={itemsPerPage.toString()}
-                  onValueChange={(value) => setItemsPerPage(Number(value))}
-                >
-                  <SelectTrigger className="w-[150px]">
-                    <SelectValue placeholder="Items per page" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="5">5 per page</SelectItem>
-                    <SelectItem value="10">10 per page</SelectItem>
-                    <SelectItem value="15">15 per page</SelectItem>
-                    <SelectItem value="20">20 per page</SelectItem>
-                  </SelectContent>
-                </Select>
+               
               </div>
             </div>
 
@@ -336,7 +312,7 @@ export default function UsersPage() {
                       <Button
                         variant="ghost"
                         onClick={() => handleSort("role")}
-                        className="flex items-center"
+                        className="p-0"
                       >
                         Role
                         <ArrowUpDown className="ml-2 h-4 w-4" />
@@ -348,13 +324,13 @@ export default function UsersPage() {
                       <Button
                         variant="ghost"
                         onClick={() => handleSort("date")}
-                        className="flex items-center"
+                        className="p-0"
                       >
                         Joined Date
                         <ArrowUpDown className="ml-2 h-4 w-4" />
                       </Button>
                     </TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -413,12 +389,16 @@ export default function UsersPage() {
                         <TableCell>
                           <Badge
                             variant={
-                              user.role === "Suspended"
+                              user.status === "suspended"
                                 ? "destructive"
-                                : "default"
+                                : user.status === "active"
+                                ? "default"
+                                : user.status === "pending"
+                                ? "warning"
+                                : "secondary"
                             }
                           >
-                            {user.role === "Suspended" ? "Suspended" : "Active"}
+                            {user.status.charAt(0).toUpperCase() + user.status.slice(1)}
                           </Badge>
                         </TableCell>
                         <TableCell>

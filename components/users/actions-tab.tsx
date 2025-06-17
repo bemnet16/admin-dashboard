@@ -9,23 +9,113 @@ import {
 import {
   AlertCircle,
   ExternalLink,
-  Key,
   ShieldAlert,
   ShieldCheck,
   Trash2,
-  UserCog,
-  UserX,
 } from "lucide-react";
+import { useUpdateUserStatusMutation, useDeleteUserMutation } from "@/store/services/userApi";
+import { useSession } from "next-auth/react";
+import { toast } from "sonner";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
+import { useState } from "react";
 
 interface ActionsTabProps {
   userData: {
-    status: string;
+    id: string;
+    status: 'active' | 'suspended' | 'inactive' | 'pending';
     role: string;
-    verified: boolean;
+    walletId?: string;
   };
+  onStatusChange?: (newStatus: 'active' | 'suspended' | 'inactive' | 'pending') => void;
+  onUserDeleted?: () => void;
 }
 
-export function ActionsTab({ userData }: ActionsTabProps) {
+export function ActionsTab({ userData, onStatusChange, onUserDeleted }: ActionsTabProps) {
+  const { data: session } = useSession();
+  const [updateUserStatus] = useUpdateUserStatusMutation();
+  const [deleteUser] = useDeleteUserMutation();
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [currentStatus, setCurrentStatus] = useState(userData.status);
+
+  const handleStatusUpdate = async () => {
+    if (!session?.user.accessToken) {
+      toast.error("Authentication required");
+      return;
+    }
+
+    try {
+      // If current status is active, we want to suspend
+      // If current status is suspended, we want to activate
+      const newStatus = currentStatus === "active" ? "suspended" : "active";
+      
+      await updateUserStatus({ 
+        userId: userData.id, 
+        status: newStatus,
+        token: session.user.accessToken
+      }).unwrap();
+      
+      // Update local state
+      setCurrentStatus(newStatus);
+      // Notify parent component if callback is provided
+      onStatusChange?.(newStatus);
+      
+      toast.success(`User ${newStatus === "active" ? "activated" : "suspended"} successfully`);
+    } catch (error) {
+      toast.error("Failed to update user status");
+    }
+  };
+
+  const handleDeleteUser = async () => {
+    if (!session?.user.accessToken) {
+      toast.error("Authentication required");
+      return;
+    }
+
+    try {
+      setIsDeleting(true);
+      await deleteUser({ 
+        userId: userData.id,
+        token: session.user.accessToken 
+      }).unwrap();
+      
+      // Notify parent component that user was deleted
+      onUserDeleted?.();
+      
+      toast.success("User deleted successfully");
+    } catch (error) {
+      toast.error("Failed to delete user");
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleViewOnBlockchain = () => {
+    if (!userData.walletId) {
+      toast.error("No wallet address found for this user");
+      return;
+    }
+    // Open blockchain explorer in new tab
+    window.open(`https://sepolia.etherscan.io/address/${userData.walletId}`, '_blank');
+  };
+
+  // Only show status toggle button if user is active or suspended
+  const canToggleStatus = currentStatus === "active" || currentStatus === "suspended";
+  const statusButtonText = currentStatus === "active" ? "Suspend User" : "Activate User";
+  const StatusIcon = currentStatus === "active" ? ShieldAlert : ShieldCheck;
+  const statusIconColor = currentStatus === "active" ? "text-amber-500" : "text-green-500";
+
+  console.log(userData, "uuu")
+
   return (
     <Card>
       <CardHeader>
@@ -35,77 +125,57 @@ export function ActionsTab({ userData }: ActionsTabProps) {
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="grid gap-4 md:grid-cols-2">
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <h3 className="text-lg font-medium">Account Management</h3>
-              <p className="text-sm text-muted-foreground">
-                Actions that affect the user's account status
-              </p>
-            </div>
-            <div className="grid gap-2">
-              <Button variant="outline" className="justify-start">
-                <ShieldAlert className="mr-2 h-4 w-4 text-amber-500" />
-                {userData.status === "Active"
-                  ? "Suspend User"
-                  : "Activate User"}
+        <div className="space-y-4">
+          <div className="grid gap-2">
+            {canToggleStatus && (
+              <Button 
+                variant="outline" 
+                className="justify-start"
+                onClick={handleStatusUpdate}
+              >
+                <StatusIcon className={`mr-2 h-4 w-4 ${statusIconColor}`} />
+                {statusButtonText}
               </Button>
-              <Button variant="outline" className="justify-start">
-                <UserX className="mr-2 h-4 w-4 text-red-500" />
-                Delete User
-              </Button>
-              <Button variant="outline" className="justify-start">
-                <Key className="mr-2 h-4 w-4 text-blue-500" />
-                Reset Password
-              </Button>
-            </div>
-          </div>
+            )}
 
-          <div className="space-y-4">
-            <div className="space-y-2">
-              <h3 className="text-lg font-medium">Role Management</h3>
-              <p className="text-sm text-muted-foreground">
-                Actions that affect the user's permissions
-              </p>
-            </div>
-            <div className="grid gap-2">
-              <Button variant="outline" className="justify-start">
-                <UserCog className="mr-2 h-4 w-4 text-violet-500" />
-                {userData.role === "User"
-                  ? "Promote to Moderator"
-                  : "Demote to User"}
-              </Button>
-              <Button variant="outline" className="justify-start">
-                <ShieldCheck className="mr-2 h-4 w-4 text-green-500" />
-                {userData.verified ? "Remove Verification" : "Verify User"}
-              </Button>
-              <Button variant="outline" className="justify-start">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" className="justify-start">
+                  <Trash2 className="mr-2 h-4 w-4 text-red-500" />
+                  Delete User
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    This action cannot be undone. This will permanently delete the user
+                    and remove their data from our servers.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Cancel</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteUser}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    disabled={isDeleting}
+                  >
+                    {isDeleting ? "Deleting..." : "Delete"}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            {userData.walletId && (
+              <Button 
+                variant="outline" 
+                className="justify-start"
+                onClick={handleViewOnBlockchain}
+              >
                 <ExternalLink className="mr-2 h-4 w-4" />
                 View on Blockchain Explorer
               </Button>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-6 pt-6 border-t">
-          <div className="space-y-2">
-            <h3 className="text-lg font-medium flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-red-500" />
-              Danger Zone
-            </h3>
-            <p className="text-sm text-muted-foreground">
-              These actions are irreversible and should be used with caution
-            </p>
-          </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Button variant="destructive" className="flex items-center gap-2">
-              <Trash2 className="h-4 w-4" />
-              Permanently Delete Account
-            </Button>
-            <Button variant="destructive" className="flex items-center gap-2">
-              <AlertCircle className="h-4 w-4" />
-              Ban User & IP
-            </Button>
+            )}
           </div>
         </div>
       </CardContent>

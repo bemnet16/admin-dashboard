@@ -7,26 +7,27 @@ export interface User {
   firstName: string;
   lastName: string;
   role: string;
-  username: string;
-  bio?: string;
-  profilePic?: string;
+  picture: string;
+  bio: string;
+  profilePic: string;
   following: string[];
   followers: string[];
+  gender: string;
+  status: 'active' | 'suspended';
   createdAt: string;
   updatedAt: string;
-  gender?: string;
 }
 
 export const userApi = createApi({
   reducerPath: "userApi",
-  baseQuery: fetchBaseQuery({ baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/auth/users` }),
+  baseQuery: fetchBaseQuery({ baseUrl: `${process.env.NEXT_PUBLIC_API_URL}/auth` }),
   tagTypes: ["User"],
   endpoints: (builder) => ({
     getUsers: builder.query<User[], void>({
       query: (token) => ({
-        url: "/",
+        url: "/users",
         method: "GET",
-         headers: {
+        headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
@@ -37,7 +38,35 @@ export const userApi = createApi({
       query: (id) => `users/${id}`,
       providesTags: (result, error, id) => [{ type: "User", id }],
     }),
+    updateUserStatus: builder.mutation<User, { userId: string; status: 'active' | 'suspended'; token: string }>({
+      query: ({ userId, status, token }) => ({
+        url: `/updateprofile`,
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: { userId, status },
+      }),
+      invalidatesTags: ["User"],
+    }),
+    deleteUser: builder.mutation<void, { userId: string; token: string }>({
+      query: ({ userId, token }) => ({
+        url: `/users/${userId}`,
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      }),
+      invalidatesTags: ["User"],
+    }),
   }),
 });
 
-export const { useGetUsersQuery, useGetUserByIdQuery } = userApi; 
+export const { 
+  useGetUsersQuery, 
+  useGetUserByIdQuery, 
+  useUpdateUserStatusMutation,
+  useDeleteUserMutation 
+} = userApi; 

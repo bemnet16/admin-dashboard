@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { ArrowUpRight, Loader2 } from "lucide-react";
@@ -29,7 +29,7 @@ interface UserData {
   // Additional fields required by components
   fullName: string;
   walletAddress: string;
-  status: string;
+  status: 'active' | 'suspended' | 'inactive' | 'pending';
   verified: boolean;
   joinDate: string;
   avatarUrl: string;
@@ -82,6 +82,7 @@ interface PostResponse {
 
 export default function UserProfilePage() {
   const { id } = useParams();
+  const router = useRouter();
   const { data: session } = useSession();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [contentData, setContentData] = useState<ContentData[]>([]);
@@ -150,7 +151,7 @@ export default function UserProfilePage() {
           ...data,
           fullName: `${data.firstName} ${data.lastName}`,
           avatarUrl: data.profilePic || "/placeholder.svg",
-          status: data.role === "Suspended" ? "Suspended" : "Active",
+          status: data.status?.toLowerCase() as 'active' | 'suspended' | 'inactive' | 'pending' || 'active',
           verified: data.role === "Admin",
           joinDate: new Date().toLocaleDateString(), // You might want to get this from the API
           walletAddress: "0x0000000000000000000000000000000000000000", // Placeholder, get from API
@@ -174,6 +175,11 @@ export default function UserProfilePage() {
       fetchUserData();
     }
   }, [id, session?.user.accessToken]);
+
+  const handleUserDeleted = () => {
+    // Navigate back to users list after successful deletion
+    router.push('/users');
+  };
 
   if (isLoading) {
     return (
@@ -267,7 +273,21 @@ export default function UserProfilePage() {
 
         {/* Admin Actions Tab */}
         <TabsContent value="actions">
-          <ActionsTab userData={userData} />
+          <ActionsTab 
+            userData={{
+              id: userData.id,
+              status: userData.status,
+              role: userData.role,
+              walletId: userData.walletAddress
+            }}
+            onStatusChange={(newStatus) => {
+              setUserData(prev => prev ? {
+                ...prev,
+                status: newStatus
+              } : null);
+            }}
+            onUserDeleted={handleUserDeleted}
+          />
         </TabsContent>
       </Tabs>
     </div>
