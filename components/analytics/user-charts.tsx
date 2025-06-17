@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { useGetUsersQuery } from "@/store/services/userApi"
-import { useGetPostsQuery } from "@/store/services/postsApi"
+import { useGetPostsQuery, useGetStatsQuery } from "@/store/services/postsApi"
 import { useSession } from "next-auth/react"
 import { Bar, Pie } from "react-chartjs-2"
 import {
@@ -64,32 +64,18 @@ export function UserCharts() {
   const token = session?.user?.accessToken || ""
   const { data: users } = useGetUsersQuery(token)
   const { data: postsData } = useGetPostsQuery({ token })
-  const [stats, setStats] = useState<Stats>({
+  const { data: stats = {
     posts: 0,
     reels: 0,
     comments: 0,
     users: 0,
-  })
+  }} = useGetStatsQuery(token)
   const [userStats, setUserStats] = useState<UserStats>({
     monthlyRegistrations: { labels: [], data: [] },
     genderDistribution: { labels: [], data: [] },
     followerRanges: { labels: [], data: [] },
     reportDistribution: { labels: [], data: [] },
   })
-
-  useEffect(() => {
-    // Fetch stats from the new endpoint
-    const fetchStats = async () => {
-      try {
-        const response = await fetch('http://localhost:3000/stats')
-        const data = await response.json()
-        setStats(data)
-      } catch (error) {
-        console.error('Error fetching stats:', error)
-      }
-    }
-    fetchStats()
-  }, [])
 
   useEffect(() => {
     if (users && postsData?.data) {

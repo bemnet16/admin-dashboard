@@ -5,7 +5,7 @@ import { useGetUsersQuery } from "@/store/services/userApi"
 import { useGetPostsQuery } from "@/store/services/postsApi"
 import { useSession } from "next-auth/react"
 import { Users, FileText, Video, AlertTriangle, Star, TrendingUp } from "lucide-react"
-import { useEffect, useState } from "react"
+import { useGetStatsQuery } from "@/store/services/postsApi"
 
 interface Reports {
   posts: number
@@ -24,7 +24,7 @@ interface Stats {
 export function OverviewCards() {
   const { data: session } = useSession()
   const token = session?.user?.accessToken || ""
-  const [stats, setStats] = useState<Stats>({
+  const { data: stats = {
     posts: 0,
     reels: 0,
     comments: 0,
@@ -34,20 +34,7 @@ export function OverviewCards() {
       reels: 0,
       total: 0
     }
-  })
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const response = await fetch('http://localhost:3000/stats')
-        const data = await response.json()
-        setStats(data)
-      } catch (error) {
-        console.error('Error fetching stats:', error)
-      }
-    }
-    fetchStats()
-  }, [])
+  }} = useGetStatsQuery(token)
 
   const cards = [
     {

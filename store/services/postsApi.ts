@@ -1,6 +1,18 @@
 import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 import type { PostsResponse, ReportsResponse } from "@/types/post";
 
+interface StatsResponse {
+  posts: number;
+  reels: number;
+  comments: number;
+  users: number;
+  reports?: {
+    posts: number;
+    reels: number;
+    total: number;
+  };
+}
+
 export const postsApi = createApi({
   reducerPath: "postsApi",
   baseQuery: fetchBaseQuery({
@@ -8,7 +20,7 @@ export const postsApi = createApi({
   }),
   endpoints: (builder) => ({
     getPosts: builder.query<PostsResponse, { token: string; page?: number; limit?: number }>({
-      query: ({ token, page = 1, limit = 10 }) => ({
+      query: ({ token, page = 1, limit = 100 }) => ({
         url: "/posts",
         params: {
           page,
@@ -54,6 +66,14 @@ export const postsApi = createApi({
         },
       }),
     }),
+    getStats: builder.query<StatsResponse, string>({
+      query: (token) => ({
+        url: "/stats",
+        headers: {
+          authorization: `Bearer ${token}`,
+        },
+      }),
+    }),
   }),
 });
 
@@ -63,4 +83,5 @@ export const {
   useApprovePostMutation,
   useRejectPostMutation,
   useDeletePostMutation,
+  useGetStatsQuery,
 } = postsApi; 

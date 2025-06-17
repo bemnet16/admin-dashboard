@@ -62,7 +62,6 @@ export function TableView({
   isDeleting,
 }: TableViewProps) {
 
-  console.log(contentItems, "ccccc")
   return (
     <div className="rounded-md border">
       <Table>
