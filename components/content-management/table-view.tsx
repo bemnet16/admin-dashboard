@@ -69,11 +69,11 @@ export function TableView({
           <TableRow>
             <TableHead>User</TableHead>
             <TableHead>Content</TableHead>
-            <TableHead>Type</TableHead>
             <TableHead>Status</TableHead>
             <TableHead>Posted</TableHead>
             <TableHead>Reports</TableHead>
             <TableHead>AI Score</TableHead>
+            <TableHead>Label</TableHead>
             <TableHead className="text-right">Actions</TableHead>
           </TableRow>
         </TableHeader>
@@ -108,14 +108,6 @@ export function TableView({
                 </div>
               </TableCell>
               <TableCell>
-                <div className="flex items-center gap-2">
-                  {getMediaIcon(item.mediaType)}
-                  <Badge variant="outline">
-                    {item.mediaType || "video"}
-                  </Badge>
-                </div>
-              </TableCell>
-              <TableCell>
                 <div className="flex flex-col gap-1">
                   <div className="flex items-center gap-2 text-sm">
                     <span className="text-muted-foreground">Likes:</span>
@@ -133,9 +125,14 @@ export function TableView({
               </TableCell>
               <TableCell>{formatDate(item.createdAt)}</TableCell>
               <TableCell>
-                <Badge variant="outline">{item.reports || 0}</Badge>
+                <Badge variant="outline">{item.reportCount || 0}</Badge>
               </TableCell>
-              <TableCell>{item.aiScore || 0}</TableCell>
+              <TableCell>
+                <Badge variant="outline">{Math.floor(item.score * 10000) / 100}</Badge>
+              </TableCell>
+              <TableCell>
+                <Badge variant="outline">{item.label || "N/A"}</Badge>
+              </TableCell>
               <TableCell className="text-right">
                 <div className="flex items-center justify-end gap-2">
                   <Button

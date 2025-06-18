@@ -138,13 +138,33 @@ export function ContentDrawer({
                 {/* AI Score */}
                 <div>
                   <h3 className="text-sm font-medium mb-2">AI Analysis</h3>
-                  <div className="p-3 bg-muted rounded-lg">
+                  <div className="p-3 bg-muted rounded-lg space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-sm">Content Score</span>
-                      <Badge variant={content.aiScore && content.aiScore >= 0.7 ? "default" : "destructive"}>
-                        {content.aiScore ? Math.round(content.aiScore * 100) : 0}%
+                      <Badge variant={content.score && content.score >= 0.7 ? "default" : "destructive"}>
+                        {Math.floor(content.score * 10000) / 100}%
                       </Badge>
                     </div>
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm">Content Label</span>
+                      <Badge variant="secondary">
+                        {content.label || "N/A"}
+                      </Badge>
+                    </div>
+                    {content.transcription_text && (
+                      <div className="pt-2 border-t">
+                        <span className="text-sm font-medium block mb-1">Transcription</span>
+                        <p className="text-sm text-muted-foreground">{content.transcription_text}</p>
+                        {content.transcription_label && (
+                          <div className="mt-2 flex items-center gap-2">
+                            <Badge variant="outline">{content.transcription_label}</Badge>
+                            {content.transcription_sentiment && (
+                              <Badge variant="outline">{content.transcription_sentiment}</Badge>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
 

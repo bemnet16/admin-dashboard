@@ -7,6 +7,7 @@ export interface ContentItem {
     online: boolean;
     picture: string;
     name: string;
+    walletId: string;
   };
   videoURL: string;
   description: string;
@@ -22,6 +23,9 @@ export interface ContentItem {
   comments: number;
   favoriteCount: number;
   shareCount: number;
+  reportCount: number;
+  score: number;
+  label: string;
   createdAt: string;
   updatedAt: string;
   privacy: string;
@@ -32,6 +36,11 @@ export interface ContentItem {
   reports?: number | null;
   flaggedReason?: string | null;
   aiScore?: number | null;
+  transcription_text?: string;
+  transcription_label?: string;
+  transcription_sentiment?: string;
+  transcription_keywords?: string[];
+  transcription_named_entities?: string[];
 }
 
 export interface ContentAction {
