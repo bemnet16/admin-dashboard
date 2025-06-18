@@ -31,6 +31,15 @@ interface ReportsResponse {
   total: number;
 }
 
+interface LikeAnalytics {
+  totalReels: number;
+  labelAnalytics: {
+    label: string;
+    count: number;
+    percentage: number;
+  }[];
+}
+
 export const contentApi = createApi({
   reducerPath: "contentApi",
   baseQuery: fetchBaseQuery({
@@ -63,6 +72,12 @@ export const contentApi = createApi({
         total: response.length
       }),
     }),
+    getLikeAnalytics: builder.query<LikeAnalytics, { userId: string; token: string }>({
+      query: ({ userId, token }) => ({
+        url: `/reel/analytics/liked?userId=${userId}`,
+        headers: { Authorization: `Bearer ${token}` },
+      }),
+    }),
     deleteContent: builder.mutation<void, { id: string; token: string }>({
       query: ({ id, token }) => ({
         url: `/reel/${id}`,
@@ -78,5 +93,6 @@ export const {
   useGetContentsQuery,
   useGetContentByIdQuery,
   useGetContentReportsQuery,
+  useGetLikeAnalyticsQuery,
   useDeleteContentMutation,
 } = contentApi; 

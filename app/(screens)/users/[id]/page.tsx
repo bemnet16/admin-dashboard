@@ -268,7 +268,11 @@ export default function UserProfilePage() {
 
         {/* Social Health Tab */}
         <TabsContent value="social-health" className="space-y-4">
-          <SocialHealthTab userData={userData} socialHealthData={socialHealthData} />
+          <SocialHealthTab 
+            userData={userData} 
+            socialHealthData={socialHealthData} 
+            accessToken={session?.user.accessToken || ''}
+          />
         </TabsContent>
 
         {/* Admin Actions Tab */}

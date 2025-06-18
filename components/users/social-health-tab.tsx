@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { Shield, AlertTriangle, ThumbsUp, Flag } from "lucide-react";
+import { useGetLikeAnalyticsQuery } from "@/store/services/contentApi";
 import {
   PieChart,
   Pie,
@@ -60,23 +61,29 @@ interface SocialHealthData {
 interface SocialHealthTabProps {
   userData: any;
   socialHealthData: SocialHealthData;
+  accessToken: string;
 }
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8'];
 const SENTIMENT_COLORS = ['#4CAF50', '#9E9E9E', '#F44336'];
 const TOXICITY_COLORS = ['#F44336', '#FF9800', '#FFEB3B', '#4CAF50'];
 
-export function SocialHealthTab({ userData, socialHealthData }: SocialHealthTabProps) {
+export function SocialHealthTab({ userData, socialHealthData, accessToken }: SocialHealthTabProps) {
+  const { data: likeAnalytics } = useGetLikeAnalyticsQuery({ 
+    userId: userData.id,
+    token: accessToken
+  });
+
   const getScoreColor = (score: number) => {
     if (score >= 80) return "text-green-500";
     if (score >= 60) return "text-yellow-500";
     return "text-red-500";
   };
 
-  const categoryData = Object.entries(socialHealthData.interactionMetrics.categories).map(([name, value]) => ({
-    name,
-    value
-  }));
+  const categoryData = likeAnalytics?.labelAnalytics.map(item => ({
+    name: item.label,
+    value: item.count
+  })) || [];
 
   const sentimentData = Object.entries(socialHealthData.interactionMetrics.sentiment).map(([name, value]) => ({
     name,
@@ -90,46 +97,7 @@ export function SocialHealthTab({ userData, socialHealthData }: SocialHealthTabP
 
   return (
     <div className="space-y-6">
-      {/* Overall Score Card */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Social Health Score
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <span className="text-2xl font-bold">Overall Score</span>
-              <span className={`text-2xl font-bold ${getScoreColor(socialHealthData.overallScore)}`}>
-                {socialHealthData.overallScore}%
-              </span>
-            </div>
-            <Progress value={socialHealthData.overallScore} className="h-2" />
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Score Trend Chart */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Score Trend</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={socialHealthData.timeBasedData}>
-                <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="date" />
-                <YAxis domain={[0, 100]} />
-                <Tooltip />
-                <Line type="monotone" dataKey="score" stroke="#8884d8" />
-              </LineChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
+     
 
       {/* Content Distribution */}
       <Card>
@@ -139,9 +107,9 @@ export function SocialHealthTab({ userData, socialHealthData }: SocialHealthTabP
         <CardContent>
           <div className="h-[300px]">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={socialHealthData.contentDistribution}>
+              <BarChart data={likeAnalytics?.labelAnalytics}>
                 <CartesianGrid strokeDasharray="3 3" />
-                <XAxis dataKey="type" />
+                <XAxis dataKey="label" />
                 <YAxis />
                 <Tooltip />
                 <Bar dataKey="count" fill="#8884d8" />
@@ -174,45 +142,16 @@ export function SocialHealthTab({ userData, socialHealthData }: SocialHealthTabP
                     <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                   ))}
                 </Pie>
-                <Tooltip />
+                <Tooltip formatter={(value) => [`${value} likes`, 'Count']} />
               </PieChart>
             </ResponsiveContainer>
           </div>
         </CardContent>
       </Card>
 
-      {/* Sentiment Analysis */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Sentiment Analysis</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="h-[300px]">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={sentimentData}
-                  cx="50%"
-                  cy="50%"
-                  labelLine={false}
-                  label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
-                  outerRadius={80}
-                  fill="#8884d8"
-                  dataKey="value"
-                >
-                  {sentimentData.map((entry, index) => (
-                    <Cell key={`cell-${index}`} fill={SENTIMENT_COLORS[index % SENTIMENT_COLORS.length]} />
-                  ))}
-                </Pie>
-                <Tooltip />
-              </PieChart>
-            </ResponsiveContainer>
-          </div>
-        </CardContent>
-      </Card>
 
       {/* Toxicity Metrics */}
-      <Card>
+      {/* <Card>
         <CardHeader>
           <CardTitle>Toxicity Metrics</CardTitle>
         </CardHeader>
@@ -233,27 +172,9 @@ export function SocialHealthTab({ userData, socialHealthData }: SocialHealthTabP
             </ResponsiveContainer>
           </div>
         </CardContent>
-      </Card>
+      </Card> */}
 
-      {/* Recent Warnings */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Warnings</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {socialHealthData.recentWarnings.map((warning, index) => (
-              <div key={index} className="flex items-start gap-4 p-4 bg-muted rounded-lg">
-                <AlertTriangle className="h-5 w-5 text-yellow-500 mt-1" />
-                <div>
-                  <p className="font-medium">{warning.message}</p>
-                  <p className="text-sm text-muted-foreground">{warning.date}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
+     
     </div>
   );
 } 
