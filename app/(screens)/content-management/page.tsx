@@ -29,6 +29,7 @@ import { useGetPostsQuery, useApprovePostMutation, useRejectPostMutation, useDel
 import { useToast } from "@/components/ui/use-toast";
 import { Grid, List } from "lucide-react";
 import { useDeleteContentMutation } from "@/store/services/contentApi";
+import { Checkbox } from "@/components/ui/checkbox";
 
 const ITEMS_PER_PAGE = 9;
 
@@ -36,9 +37,9 @@ export default function ContentManagementPage() {
   const { data: session } = useSession();
   const [activeTab, setActiveTab] = useState<"reels" | "posts">("reels");
   const [searchQuery, setSearchQuery] = useState("");
-  const [contentTypeFilter, setContentTypeFilter] = useState("all");
-  const [mediaTypeFilter, setMediaTypeFilter] = useState("all");
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [labelFilter, setLabelFilter] = useState("all");
+  const [aiScoreFilter, setAiScoreFilter] = useState("all");
+  const [showReportedOnly, setShowReportedOnly] = useState(false);
   const [viewMode, setViewMode] = useState<ViewMode>("table");
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -98,18 +99,27 @@ export default function ContentManagementPage() {
       item.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.profile.name.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesContentType =
-      contentTypeFilter === "all" || item.contentType === contentTypeFilter;
+    const matchesLabel =
+      labelFilter === "all" || item.label === labelFilter;
 
-    const matchesMediaType =
-      mediaTypeFilter === "all" || item.mediaType === mediaTypeFilter;
+    const matchesAiScore = (() => {
+      if (aiScoreFilter === "all") return true;
+      const score = item.score || 0;
+      switch (aiScoreFilter) {
+        case "low":
+          return score < 0.5;
+        case "medium":
+          return score >= 0.5 && score <= 0.8;
+        case "high":
+          return score > 0.8;
+        default:
+          return true;
+      }
+    })();
 
-    const matchesStatus =
-      statusFilter === "all" || item.status === statusFilter;
+    const matchesReported = !showReportedOnly || (item.reportCount && item.reportCount > 0);
 
-    return (
-      matchesSearch && matchesContentType && matchesMediaType && matchesStatus
-    );
+    return matchesSearch && matchesLabel && matchesAiScore && matchesReported;
   }) || [];
 
   // Filter posts
@@ -120,10 +130,7 @@ export default function ContentManagementPage() {
       post.owner.firstName.toLowerCase().includes(searchQuery.toLowerCase()) ||
       post.owner.lastName.toLowerCase().includes(searchQuery.toLowerCase());
 
-    const matchesStatus =
-      statusFilter === "all" || post.status === statusFilter;
-
-    return matchesSearch && matchesStatus;
+    return matchesSearch;
   }) || [];
 
   const handleViewContent = (content: ContentItem) => {
@@ -209,9 +216,9 @@ export default function ContentManagementPage() {
 
   const clearFilters = () => {
     setSearchQuery("");
-    setContentTypeFilter("all");
-    setMediaTypeFilter("all");
-    setStatusFilter("all");
+    setLabelFilter("all");
+    setAiScoreFilter("all");
+    setShowReportedOnly(false);
   };
 
   if (isLoadingContent || isLoadingPosts) {
@@ -284,49 +291,51 @@ export default function ContentManagementPage() {
             <div className="flex flex-wrap gap-2 w-full sm:w-auto">
               {activeTab === "reels" && (
                 <>
+                 <div className="flex items-center space-x-2">
+                    <Checkbox
+                      id="reported"
+                      checked={showReportedOnly}
+                      onCheckedChange={(checked) => setShowReportedOnly(checked as boolean)}
+                    />
+                    <label
+                      htmlFor="reported"
+                      className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                    >
+                      Reported Only
+                    </label>
+                  </div>
                   <Select
-                    value={contentTypeFilter}
-                    onValueChange={setContentTypeFilter}
+                    value={labelFilter}
+                    onValueChange={setLabelFilter}
                   >
                     <SelectTrigger className="w-full sm:w-[140px]">
-                      <SelectValue placeholder="Content Type" />
+                      <SelectValue placeholder="Label" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Types</SelectItem>
-                      <SelectItem value="post">Posts</SelectItem>
-                      <SelectItem value="comment">Comments</SelectItem>
+                      <SelectItem value="all">All Labels</SelectItem>
+                      <SelectItem value="free">Free</SelectItem>
+                      <SelectItem value="hate">Hate</SelectItem>
                     </SelectContent>
                   </Select>
 
                   <Select
-                    value={mediaTypeFilter}
-                    onValueChange={setMediaTypeFilter}
+                    value={aiScoreFilter}
+                    onValueChange={setAiScoreFilter}
                   >
                     <SelectTrigger className="w-full sm:w-[140px]">
-                      <SelectValue placeholder="Media Type" />
+                      <SelectValue placeholder="AI Score" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="all">All Media</SelectItem>
-                      <SelectItem value="text">Text</SelectItem>
-                      <SelectItem value="image">Image</SelectItem>
-                      <SelectItem value="video">Video</SelectItem>
+                      <SelectItem value="all">All Scores</SelectItem>
+                      <SelectItem value="low">{"< 50%"}</SelectItem>
+                      <SelectItem value="medium">50% - 80%</SelectItem>
+                      <SelectItem value="high">{"> 80%"}</SelectItem>
                     </SelectContent>
                   </Select>
+
+                 
                 </>
               )}
-
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-[140px]">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="reported">Reported</SelectItem>
-                  <SelectItem value="pending">Pending</SelectItem>
-                  <SelectItem value="approved">Approved</SelectItem>
-                  <SelectItem value="rejected">Rejected</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <Button
