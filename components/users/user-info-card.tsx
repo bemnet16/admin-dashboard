@@ -4,14 +4,14 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Copy, ShieldCheck } from "lucide-react";
+import { Copy, ShieldCheck, Wallet } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
 type UserData = {
   id: string;
   fullName: string;
   email: string;
-  walletAddress: string;
+  walletId?: string;
   role: string;
   status: string;
   verified: boolean;
@@ -34,6 +34,7 @@ export function UserInfoCard({ user }: UserInfoCardProps) {
   };
 
   const truncateAddress = (address: string) => {
+    if (!address) return "";
     return `${address.substring(0, 6)}...${address.substring(
       address.length - 4
     )}`;
@@ -103,20 +104,27 @@ export function UserInfoCard({ user }: UserInfoCardProps) {
                 <p className="text-sm font-medium text-muted-foreground">
                   Wallet Address
                 </p>
-                <div className="flex items-center gap-2">
-                  <code className="text-xs sm:text-sm font-mono bg-muted px-2 py-1 rounded">
-                    {truncateAddress(user.walletAddress)}
-                  </code>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-8 w-8"
-                    onClick={() => copyToClipboard(user.walletAddress)}
-                  >
-                    <Copy className="h-4 w-4" />
-                    <span className="sr-only">Copy wallet address</span>
-                  </Button>
-                </div>
+                {user.walletId ? (
+                  <div className="flex items-center gap-2">
+                    <code className="text-xs sm:text-sm font-mono bg-muted px-2 py-1 rounded">
+                      {truncateAddress(user.walletId as string)}
+                    </code>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => copyToClipboard(user.walletId as string)}
+                    >
+                      <Copy className="h-4 w-4" />
+                      <span className="sr-only">Copy wallet address</span>
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-muted-foreground">
+                    <Wallet className="h-4 w-4" />
+                    <span className="text-sm">No wallet connected</span>
+                  </div>
+                )}
               </div>
             </div>
           </div>
